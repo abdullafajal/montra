@@ -69,4 +69,35 @@ uv run python manage.py generate_pwa_icons
 - Django 5.1
 - Tailwind CSS (via CDN for dev)
 - Chart.js
+- Chart.js
 - Django PWA
+
+## Deployment (PythonAnywhere)
+
+1.  **Pull code**:
+    ```bash
+    git pull origin main
+    ```
+
+2.  **Update dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3.  **Migrate database**:
+    ```bash
+    python manage.py migrate
+    ```
+
+4.  **Collect Static Files** (Fixes 404 errors):
+    ```bash
+    python manage.py collectstatic
+    ```
+    This gathers all static files (CSS, JS, Images) into the `staticfiles` directory.
+
+5.  **Configure Static Mapping** (Web Tab):
+    - **URL**: `/static/`
+    - **Directory**: `/home/<username>/<project_folder>/staticfiles` (e.g., `/home/montra/montra/staticfiles`)
+
+6.  **Environment Variables**:
+    Create a `.env` file in your project root with production settings (DEBUG=False).

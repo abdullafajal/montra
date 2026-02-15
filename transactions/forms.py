@@ -29,7 +29,7 @@ class TransactionForm(forms.ModelForm):
             "amount": forms.NumberInput(attrs={"class": tw, "placeholder": "0.00", "step": "0.01", "min": "0.01"}),
             "type": forms.Select(attrs={"class": tw_select}),
             "category": CategorySelect(attrs={"class": tw}),
-            "date": forms.DateTimeInput(attrs={"class": tw_date, "type": "datetime-local"}),
+            "date": forms.DateTimeInput(attrs={"class": tw_date, "type": "datetime-local", "step": "1"}),
             "payment_method": forms.Select(attrs={"class": tw_select}),
             "notes": forms.Textarea(attrs={"class": tw_textarea, "placeholder": "Add a note...", "rows": 3}),
         }
