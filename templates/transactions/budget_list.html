@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load core_tags %}
+
+{% block title %}Budgets{% endblock %}
+
+{% block top_bar %}
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <a href="{% url 'transactions:dashboard' %}" class="w-10 h-10 rounded-xl bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark flex items-center justify-center hover:bg-m3-surface-container-highest transition-colors lg:hidden">
+            <span class="material-symbols-outlined icon-md text-m3-on-surface dark:text-m3-on-surface-dark">arrow_back</span>
+        </a>
+        <h1 class="text-xl font-bold text-m3-on-surface dark:text-m3-on-surface-dark">Budgets</h1>
+    </div>
+    <a href="{% url 'transactions:budget_create' %}" class="w-10 h-10 lg:w-auto lg:px-4 lg:py-2.5 rounded-xl lg:rounded-3xl bg-m3-primary-container dark:bg-m3-primary-container-dark flex items-center justify-center lg:gap-2 hover:opacity-90 transition-colors">
+        <span class="material-symbols-outlined icon-md text-m3-on-primary-container dark:text-m3-on-primary-container-dark">add</span>
+        <span class="hidden lg:inline text-sm font-medium text-m3-on-primary-container dark:text-m3-on-primary-container-dark">Add Budget</span>
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in grid grid-cols-1 lg:grid-cols-2 gap-3">
+    {% for budget in budgets %}
+    {% with pct=budget.get_percentage spent=budget.get_spent %}
+    <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background-color: {{ budget.category.color }}15;">
+                    <span class="material-symbols-outlined" style="color: {{ budget.category.color }}; font-size: 22px;">{{ budget.category.icon }}</span>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark">{{ budget.category.name }}</p>
+                    <p class="text-xs text-m3-outline dark:text-m3-outline-dark">{{ budget.month|date:"M Y" }}</p>
+                </div>
+            </div>
+            <div class="flex gap-1">
+                <a href="{% url 'transactions:budget_update' budget.pk %}" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-m3-surface-container-high dark:hover:bg-m3-surface-container-high-dark transition-colors">
+                    <span class="material-symbols-outlined icon-sm text-m3-outline dark:text-m3-outline-dark">edit</span>
+                </a>
+                <a href="{% url 'transactions:budget_delete' budget.pk %}" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <span class="material-symbols-outlined icon-sm text-m3-outline dark:text-m3-outline-dark">delete</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div>
+            <div class="flex justify-between text-xs mb-1.5">
+                <span class="text-m3-outline dark:text-m3-outline-dark">{{ spent|currency:currency_symbol }} spent</span>
+                <span class="font-medium {% if budget.is_exceeded %}text-m3-error dark:text-m3-error-dark{% else %}text-m3-on-surface dark:text-m3-on-surface-dark{% endif %}">{{ pct }}%</span>
+            </div>
+            <div class="w-full h-2 bg-m3-surface-container-highest dark:bg-m3-surface-container-highest-dark rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500 {% if budget.is_exceeded %}bg-m3-error dark:bg-m3-error-dark{% elif pct > 75 %}bg-amber-500{% else %}bg-income{% endif %}" style="width: {{ pct }}%;"></div>
+            </div>
+            <div class="flex justify-between text-xs mt-1.5 text-m3-outline dark:text-m3-outline-dark">
+                <span>{{ currency_symbol }}0</span>
+                <span>{{ budget.amount|currency:currency_symbol }}</span>
+            </div>
+        </div>
+
+        {% if budget.is_exceeded %}
+        <div class="flex items-center gap-2 mt-3 px-3 py-2 bg-red-50 dark:bg-red-900/20 rounded-xl">
+            <span class="material-symbols-outlined icon-sm text-m3-error dark:text-m3-error-dark">warning</span>
+            <p class="text-xs text-m3-error dark:text-m3-error-dark font-medium">Budget exceeded</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="col-span-full text-center py-16">
+        <span class="material-symbols-outlined text-m3-outline-variant dark:text-m3-outline-variant-dark" style="font-size:56px;">savings</span>
+        <p class="text-m3-outline dark:text-m3-outline-dark font-medium mt-2">No budgets set</p>
+        <a href="{% url 'transactions:budget_create' %}" class="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-m3-primary dark:bg-m3-primary-dark text-m3-on-primary dark:text-m3-on-primary-dark text-sm font-medium rounded-3xl hover:opacity-90 transition-colors">
+            <span class="material-symbols-outlined icon-sm">add</span>
+            Create Budget
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

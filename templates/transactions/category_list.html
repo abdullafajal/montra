@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load core_tags %}
+
+{% block title %}Categories{% endblock %}
+
+{% block top_bar %}
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <a href="{% url 'transactions:dashboard' %}" class="w-10 h-10 rounded-xl bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark flex items-center justify-center hover:bg-m3-surface-container-highest transition-colors lg:hidden">
+            <span class="material-symbols-outlined icon-md text-m3-on-surface dark:text-m3-on-surface-dark">arrow_back</span>
+        </a>
+        <h1 class="text-xl font-bold text-m3-on-surface dark:text-m3-on-surface-dark">Categories</h1>
+    </div>
+    <a href="{% url 'transactions:category_create' %}" class="w-10 h-10 lg:w-auto lg:px-4 lg:py-2.5 rounded-xl lg:rounded-3xl bg-m3-primary-container dark:bg-m3-primary-container-dark flex items-center justify-center lg:gap-2 hover:opacity-90 transition-colors">
+        <span class="material-symbols-outlined icon-md text-m3-on-primary-container dark:text-m3-on-primary-container-dark">add</span>
+        <span class="hidden lg:inline text-sm font-medium text-m3-on-primary-container dark:text-m3-on-primary-container-dark">Add Category</span>
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {% for cat in categories %}
+        <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: {{ cat.color }}15;">
+                <span class="material-symbols-outlined" style="color: {{ cat.color }}; font-size: 22px;">{{ cat.icon }}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark truncate">{{ cat.name }}</p>
+                <p class="text-xs text-m3-outline dark:text-m3-outline-dark">{% if cat.is_system %}System{% else %}Custom{% endif %}</p>
+            </div>
+            {% if not cat.is_system %}
+            <div class="flex gap-1 flex-shrink-0">
+                <a href="{% url 'transactions:category_update' cat.pk %}" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-m3-surface-container-high dark:hover:bg-m3-surface-container-high-dark transition-colors">
+                    <span class="material-symbols-outlined icon-sm text-m3-outline dark:text-m3-outline-dark">edit</span>
+                </a>
+                <a href="{% url 'transactions:category_delete' cat.pk %}" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <span class="material-symbols-outlined icon-sm text-m3-outline dark:text-m3-outline-dark">delete</span>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

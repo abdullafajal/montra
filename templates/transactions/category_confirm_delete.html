@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Category{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in max-w-md mx-auto mt-8">
+    <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-6 text-center">
+        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-m3-error dark:text-m3-error-dark" style="font-size:32px;">delete</span>
+        </div>
+        <h2 class="text-lg font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-2">Delete this category?</h2>
+        <div class="flex items-center justify-center gap-2 mb-6">
+            <span class="material-symbols-outlined" style="color: {{ object.color }}; font-size:20px;">{{ object.icon }}</span>
+            <span class="text-sm text-m3-outline dark:text-m3-outline-dark">{{ object.name }}</span>
+        </div>
+        <form method="post" class="flex gap-3">
+            {% csrf_token %}
+            <a href="{% url 'transactions:category_list' %}" class="flex-1 py-3 bg-m3-surface-container-highest dark:bg-m3-surface-container-highest-dark text-m3-on-surface dark:text-m3-on-surface-dark font-medium rounded-3xl text-center hover:opacity-90 transition-colors">Cancel</a>
+            <button type="submit" class="flex-1 py-3 bg-m3-error dark:bg-m3-error-dark text-m3-on-error dark:text-m3-on-error-dark font-medium rounded-3xl hover:opacity-90 transition-colors active:scale-[0.98]">Delete</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

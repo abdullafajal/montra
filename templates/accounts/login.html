@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block main_class %}px-6 py-8{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex flex-col justify-center animate-fade-in max-w-md mx-auto">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-m3-primary-container dark:bg-m3-primary-container-dark rounded-2xl mx-auto flex items-center justify-center mb-4">
+            <span class="material-symbols-outlined text-m3-on-primary-container dark:text-m3-on-primary-container-dark" style="font-size:32px;">account_balance_wallet</span>
+        </div>
+        <h1 class="text-2xl font-bold text-m3-on-surface dark:text-m3-on-surface-dark">Welcome Back</h1>
+        <p class="text-sm text-m3-outline dark:text-m3-outline-dark mt-1">Sign in to continue to Montra</p>
+    </div>
+
+    <!-- Form -->
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 text-m3-error dark:text-m3-error-dark text-sm rounded-xl px-4 py-3">
+            <span class="material-symbols-outlined icon-sm">error</span>
+            Invalid username or password.
+        </div>
+        {% endif %}
+
+        <div>
+            <label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Username</label>
+            {{ form.username }}
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Password</label>
+            {{ form.password }}
+        </div>
+
+        <button type="submit" class="w-full py-3.5 bg-m3-primary dark:bg-m3-primary-dark text-m3-on-primary dark:text-m3-on-primary-dark font-medium rounded-3xl hover:opacity-90 transition-all duration-200 active:scale-[0.98]">
+            Sign In
+        </button>
+    </form>
+
+    <p class="text-center text-sm text-m3-outline dark:text-m3-outline-dark mt-6">
+        Don't have an account?
+        <a href="{% url 'accounts:register' %}" class="font-medium text-m3-primary dark:text-m3-primary-dark hover:underline">Sign Up</a>
+    </p>
+</div>
+{% endblock %}

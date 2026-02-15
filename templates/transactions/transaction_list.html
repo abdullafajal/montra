@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load core_tags %}
+
+{% block title %}Transactions{% endblock %}
+
+{% block top_bar %}
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8">
+    <!-- Header: Back + Title + Add -->
+    <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'transactions:dashboard' %}" class="w-10 h-10 rounded-xl bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark flex items-center justify-center hover:bg-m3-surface-container-highest transition-colors lg:hidden">
+                <span class="material-symbols-outlined icon-md text-m3-on-surface dark:text-m3-on-surface-dark">arrow_back</span>
+            </a>
+            <h1 class="text-xl font-bold text-m3-on-surface dark:text-m3-on-surface-dark">Transactions</h1>
+        </div>
+        <a href="{% url 'transactions:create' %}" class="w-10 h-10 lg:w-auto lg:px-4 lg:py-2.5 rounded-xl lg:rounded-3xl bg-m3-primary-container dark:bg-m3-primary-container-dark flex items-center justify-center lg:gap-2 hover:opacity-90 transition-colors">
+            <span class="material-symbols-outlined icon-md text-m3-on-primary-container dark:text-m3-on-primary-container-dark">add</span>
+            <span class="hidden lg:inline text-sm font-medium text-m3-on-primary-container dark:text-m3-on-primary-container-dark">Add Transaction</span>
+        </a>
+    </div>
+
+    <!-- Search + Filters -->
+    <form method="get" class="space-y-2">
+        {% if not show_all %}
+        <input type="hidden" name="month" value="{{ month_current }}">
+        {% else %}
+        <input type="hidden" name="all" value="1">
+        {% endif %}
+
+        <div class="relative">
+            <span class="material-symbols-outlined icon-sm absolute left-3 top-1/2 -translate-y-1/2 text-m3-outline dark:text-m3-outline-dark">search</span>
+            <input type="text" name="q" value="{{ current_filters.q }}" placeholder="Search..."
+                   class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark text-m3-on-surface dark:text-m3-on-surface-dark border-0 outline-none focus:ring-2 focus:ring-m3-primary dark:focus:ring-m3-primary-dark transition-all placeholder:text-m3-outline dark:placeholder:text-m3-outline-dark text-sm">
+        </div>
+
+        <!-- Filter Chips + Month Navigator -->
+        <div class="flex gap-2 overflow-x-auto no-scrollbar items-center pb-1">
+            <select name="type" onchange="this.form.submit()" class="flex-shrink-0 px-3 py-2 rounded-xl text-sm font-medium bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark text-m3-on-surface dark:text-m3-on-surface-dark border border-m3-outline-variant dark:border-m3-outline-variant-dark outline-none appearance-none pr-8 bg-no-repeat bg-[length:16px] bg-[right_8px_center]" style="background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path fill=%22%236E7B84%22 d=%22m7 10 5 5 5-5z%22/></svg>');">
+                <option value="">All Types</option>
+                <option value="income" {% if current_filters.type == 'income' %}selected{% endif %}>Income</option>
+                <option value="expense" {% if current_filters.type == 'expense' %}selected{% endif %}>Expense</option>
+            </select>
+
+            <select name="category" onchange="this.form.submit()" class="flex-shrink-0 px-3 py-2 rounded-xl text-sm font-medium bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark text-m3-on-surface dark:text-m3-on-surface-dark border border-m3-outline-variant dark:border-m3-outline-variant-dark outline-none max-w-[160px] appearance-none pr-8 bg-no-repeat bg-[length:16px] bg-[right_8px_center]" style="background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path fill=%22%236E7B84%22 d=%22m7 10 5 5 5-5z%22/></svg>');">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if current_filters.category == cat.id|stringformat:"d" %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Month Navigator (inline) -->
+            <div class="flex-shrink-0 flex items-center gap-0.5 px-1.5 py-1 rounded-xl bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark border border-m3-outline-variant dark:border-m3-outline-variant-dark">
+                {% if not show_all %}
+                <a href="?month={{ month_prev }}{% if current_filters.type %}&type={{ current_filters.type }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}"
+                   class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-m3-surface-container-highest dark:hover:bg-m3-surface-container-highest-dark transition-colors">
+                    <span class="material-symbols-outlined icon-sm text-m3-on-surface dark:text-m3-on-surface-dark">chevron_left</span>
+                </a>
+                {% endif %}
+
+                <span class="px-1.5 text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark whitespace-nowrap">{{ month_label }}</span>
+
+                {% if not show_all %}
+                <a href="?month={{ month_next }}{% if current_filters.type %}&type={{ current_filters.type }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}"
+                   class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-m3-surface-container-highest dark:hover:bg-m3-surface-container-highest-dark transition-colors">
+                    <span class="material-symbols-outlined icon-sm text-m3-on-surface dark:text-m3-on-surface-dark">chevron_right</span>
+                </a>
+                {% endif %}
+
+                {% if not show_all %}
+                <a href="?all=1{% if current_filters.type %}&type={{ current_filters.type }}{% endif %}{% if current_filters.category %}&category={{ current_filters.category }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}"
+                   class="px-2 py-0.5 rounded-lg text-xs font-medium text-m3-primary dark:text-m3-primary-dark hover:bg-m3-surface-container-highest dark:hover:bg-m3-surface-container-highest-dark transition-colors">
+                    All
+                </a>
+                {% else %}
+                <a href="?{% if current_filters.type %}type={{ current_filters.type }}&{% endif %}{% if current_filters.category %}category={{ current_filters.category }}&{% endif %}{% if current_filters.q %}q={{ current_filters.q }}{% endif %}"
+                   class="px-2 py-0.5 rounded-lg text-xs font-medium text-m3-primary dark:text-m3-primary-dark hover:bg-m3-surface-container-highest dark:hover:bg-m3-surface-container-highest-dark transition-colors whitespace-nowrap">
+                    This Month
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in space-y-2">
+    {% for txn in transactions %}
+    <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4 flex items-center gap-3.5 hover:bg-m3-surface-container-high dark:hover:bg-m3-surface-container-high-dark transition-colors">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: {{ txn.category.color }}15;">
+            <span class="material-symbols-outlined" style="color: {{ txn.category.color }}; font-size: 22px;">{{ txn.category.icon }}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+            <h3 class="text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark truncate">{{ txn.category.name }}</h3>
+            <p class="text-xs text-m3-outline dark:text-m3-outline-dark truncate">{{ txn.date|date:"M d, h:i A" }} · {{ txn.get_payment_method_display }}</p>
+            {% if txn.notes %}<p class="text-[11px] text-m3-outline/70 dark:text-m3-outline-dark/70 truncate mt-0.5">{{ txn.notes }}</p>{% endif %}
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-sm font-bold {% if txn.type == 'income' %}text-income{% else %}text-expense{% endif %}">
+                {% if txn.type == 'income' %}+{% else %}-{% endif %}{{ txn.amount|currency:currency_symbol }}
+            </span>
+            <div class="flex gap-0.5">
+                <a href="{% url 'transactions:update' txn.pk %}" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-m3-surface-container-highest dark:hover:bg-m3-surface-container-highest-dark transition-colors">
+                    <span class="material-symbols-outlined icon-sm text-m3-outline dark:text-m3-outline-dark">edit</span>
+                </a>
+                <a href="{% url 'transactions:delete' txn.pk %}" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <span class="material-symbols-outlined icon-sm text-m3-outline dark:text-m3-outline-dark">delete</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-16">
+        <span class="material-symbols-outlined text-m3-outline-variant dark:text-m3-outline-variant-dark" style="font-size:56px;">receipt_long</span>
+        <p class="text-m3-outline dark:text-m3-outline-dark font-medium mt-2">No transactions found</p>
+        <a href="{% url 'transactions:create' %}" class="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-m3-primary dark:bg-m3-primary-dark text-m3-on-primary dark:text-m3-on-primary-dark text-sm font-medium rounded-3xl hover:opacity-90 transition-colors">
+            <span class="material-symbols-outlined icon-sm">add</span>
+            Add Transaction
+        </a>
+    </div>
+    {% endfor %}
+
+    <!-- Pagination -->
+    {% if transactions.has_other_pages %}
+    <div class="flex justify-center items-center gap-2 pt-4 pb-2">
+        {% if transactions.has_previous %}
+        <a href="?page={{ transactions.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="w-9 h-9 rounded-xl bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark flex items-center justify-center hover:bg-m3-surface-container-highest transition-colors">
+            <span class="material-symbols-outlined icon-sm text-m3-on-surface dark:text-m3-on-surface-dark">chevron_left</span>
+        </a>
+        {% endif %}
+        <span class="px-3 py-1.5 rounded-xl text-xs font-medium bg-m3-primary-container dark:bg-m3-primary-container-dark text-m3-on-primary-container dark:text-m3-on-primary-container-dark">
+            {{ transactions.number }} / {{ transactions.paginator.num_pages }}
+        </span>
+        {% if transactions.has_next %}
+        <a href="?page={{ transactions.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="w-9 h-9 rounded-xl bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark flex items-center justify-center hover:bg-m3-surface-container-highest transition-colors">
+            <span class="material-symbols-outlined icon-sm text-m3-on-surface dark:text-m3-on-surface-dark">chevron_right</span>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

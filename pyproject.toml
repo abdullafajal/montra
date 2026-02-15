@@ -1,0 +1,14 @@
+[project]
+name = "montra"
+version = "0.1.0"
+description = "Modern Expense & Income Tracker Web App"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.1",
+    "django-widget-tweaks>=0.13",
+    "reportlab>=4.1",
+    "python-dateutil>=2.9",
+    "django-pwa>=2.0.1",
+    "pillow>=12.1.1",
+]

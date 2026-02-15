@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit{% else %}Add{% endif %} Transaction{% endblock %}
+
+{% block top_bar %}
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3">
+    <a href="{% url 'transactions:list' %}" class="w-10 h-10 rounded-xl bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark flex items-center justify-center hover:bg-m3-surface-container-highest transition-colors">
+        <span class="material-symbols-outlined icon-md text-m3-on-surface dark:text-m3-on-surface-dark">arrow_back</span>
+    </a>
+    <h1 class="text-lg font-bold text-m3-on-surface dark:text-m3-on-surface-dark">{% if object %}Edit{% else %}Add{% endif %} Transaction</h1>
+    {% if request.GET.type %}
+    <span class="ml-auto px-3 py-1 rounded-3xl text-xs font-bold {% if request.GET.type == 'income' %}bg-green-100 dark:bg-green-900/20 text-income-dark dark:text-income{% else %}bg-red-100 dark:bg-red-900/20 text-expense-dark dark:text-expense{% endif %}">
+        {% if request.GET.type == 'income' %}
+        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">arrow_upward</span> Income
+        {% else %}
+        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">arrow_downward</span> Expense
+        {% endif %}
+    </span>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in max-w-lg mx-auto">
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% if form.errors %}
+        <div class="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 text-m3-error dark:text-m3-error-dark text-sm rounded-xl px-4 py-3">
+            <span class="material-symbols-outlined icon-sm">error</span>
+            <div>{% for field in form %}{% for error in field.errors %}<p><strong>{{ field.label }}:</strong> {{ error }}</p>{% endfor %}{% endfor %}</div>
+        </div>
+        {% endif %}
+
+        <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-5 space-y-4">
+            {% if request.GET.type and not object %}
+            <input type="hidden" name="type" value="{{ request.GET.type }}">
+            {% else %}
+            <div>
+                <label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Type</label>
+                {{ form.type }}
+            </div>
+            {% endif %}
+            <div>
+                <label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Amount</label>
+                {{ form.amount }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Category</label>
+                {{ form.category }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Date</label>
+                {{ form.date }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Payment Method</label>
+                {{ form.payment_method }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Notes</label>
+                {{ form.notes }}
+            </div>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 {% if request.GET.type == 'income' %}bg-income hover:bg-income-dark{% elif request.GET.type == 'expense' %}bg-expense hover:bg-expense-dark{% else %}bg-m3-primary dark:bg-m3-primary-dark hover:opacity-90{% endif %} text-white font-medium rounded-3xl transition-all duration-200 active:scale-[0.98]">
+            {% if object %}Update{% else %}Add{% endif %} {% if request.GET.type == 'income' %}Income{% elif request.GET.type == 'expense' %}Expense{% else %}Transaction{% endif %}
+        </button>
+    </form>
+</div>
+{% endblock %}
+

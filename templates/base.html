@@ -1,0 +1,361 @@
+{% load core_tags %}
+{% load pwa %}
+<!DOCTYPE html>
+<html lang="en" class="{% if theme == 'dark' %}dark{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Montra{% endblock %} — Montra</title>
+    <meta name="description" content="Montra — Modern Expense & Income Tracker">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/icons/icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/images/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/images/icons/icon-16x16.png">
+    {% progressive_web_app_meta %}
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Roboto', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        m3: {
+                            'primary':          { DEFAULT: '#455A64', dark: '#B0BEC5' },
+                            'on-primary':       { DEFAULT: '#FFFFFF', dark: '#1C313A' },
+                            'primary-container':{ DEFAULT: '#CFD8DC', dark: '#37474F' },
+                            'on-primary-container': { DEFAULT: '#263238', dark: '#CFD8DC' },
+                            'secondary':        { DEFAULT: '#607D8B', dark: '#B0BEC5' },
+                            'on-secondary':     { DEFAULT: '#FFFFFF', dark: '#263238' },
+                            'secondary-container': { DEFAULT: '#DDE4E9', dark: '#3A464D' },
+                            'on-secondary-container': { DEFAULT: '#12181C', dark: '#DDE4E9' },
+                            'tertiary':         { DEFAULT: '#78909C', dark: '#90A4AE' },
+                            'error':            { DEFAULT: '#B3261E', dark: '#F2B8B5' },
+                            'on-error':         { DEFAULT: '#FFFFFF', dark: '#601410' },
+                            'surface':          { DEFAULT: '#F5F7FA', dark: '#121619' },
+                            'on-surface':       { DEFAULT: '#1B2329', dark: '#DEE3E8' },
+                            'surface-container':{ DEFAULT: '#EDF1F5', dark: '#1E2529' },
+                            'surface-container-high': { DEFAULT: '#E3E8ED', dark: '#272E33' },
+                            'surface-container-highest': { DEFAULT: '#D9DFE5', dark: '#323A3F' },
+                            'surface-container-low': { DEFAULT: '#F0F4F8', dark: '#1B2024' },
+                            'outline':          { DEFAULT: '#6E7B84', dark: '#8A969E' },
+                            'outline-variant':  { DEFAULT: '#C1C9CF', dark: '#3D474D' },
+                        },
+                        income: { light: '#d1fae5', DEFAULT: '#10b981', dark: '#059669' },
+                        expense: { light: '#fee2e2', DEFAULT: '#ef4444', dark: '#dc2626' },
+                    },
+                    borderRadius: {
+                        'xl': '12px',
+                        '2xl': '16px',
+                        '3xl': '28px',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts: Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Google Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <style>
+        * { font-family: 'Roboto', system-ui, sans-serif; }
+        body { -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Material Symbols sizing */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-sm { font-size: 18px; }
+        .icon-md { font-size: 24px; }
+        .icon-lg { font-size: 28px; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-slide-up { animation: slideUp 0.25s ease-out forwards; }
+        .animate-overlay { animation: fadeOverlay 0.2s ease-out forwards; }
+        .stagger-1 { animation-delay: 0.05s; }
+        .stagger-2 { animation-delay: 0.1s; }
+        .stagger-3 { animation-delay: 0.15s; }
+        .stagger-4 { animation-delay: 0.2s; }
+
+        /* M3 elevation */
+        .elevation-1 { box-shadow: 0 1px 3px 1px rgba(0,0,0,0.15), 0 1px 2px 0 rgba(0,0,0,0.3); }
+        .elevation-2 { box-shadow: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px 0 rgba(0,0,0,0.3); }
+
+        /* Sidebar active indicator */
+        .nav-item-active {
+            background: #CFD8DC;
+            color: #263238;
+        }
+        .dark .nav-item-active {
+            background: #37474F;
+            color: #CFD8DC;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-m3-surface dark:bg-m3-surface-dark text-m3-on-surface dark:text-m3-on-surface-dark min-h-screen antialiased">
+
+    {% if request.user.is_authenticated %}
+    <!-- ===== DESKTOP SIDEBAR (lg+) ===== -->
+    <aside class="hidden lg:flex fixed top-0 left-0 h-full w-64 bg-m3-surface-container dark:bg-m3-surface-container-dark flex-col z-50 border-r border-m3-outline-variant dark:border-m3-outline-variant-dark">
+        <!-- Brand -->
+        <div class="px-6 py-6 flex items-center gap-3">
+            <div class="w-10 h-10 bg-m3-primary dark:bg-m3-primary-dark rounded-xl flex items-center justify-center">
+                <span class="material-symbols-outlined text-m3-on-primary dark:text-m3-on-primary-dark" style="font-size:22px;">account_balance_wallet</span>
+            </div>
+            <span class="text-lg font-bold text-m3-on-surface dark:text-m3-on-surface-dark tracking-tight">Montra</span>
+        </div>
+
+        <!-- Nav Items -->
+        <nav class="flex-1 px-3 mt-2 space-y-1">
+            <a href="{% url 'transactions:dashboard' %}" class="flex items-center gap-3 px-3 py-3 rounded-3xl text-sm font-medium transition-all duration-200 {% active_nav request '^/$' %}" id="sidenav-home">
+                <span class="material-symbols-outlined icon-md">home</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{% url 'transactions:list' %}" class="flex items-center gap-3 px-3 py-3 rounded-3xl text-sm font-medium transition-all duration-200 {% active_nav request '^/transactions' %}" id="sidenav-history">
+                <span class="material-symbols-outlined icon-md">receipt_long</span>
+                <span>Transactions</span>
+            </a>
+            <a href="{% url 'transactions:budget_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-3xl text-sm font-medium transition-all duration-200 {% active_nav request '^/transactions/budgets' %}" id="sidenav-budgets">
+                <span class="material-symbols-outlined icon-md">savings</span>
+                <span>Budgets</span>
+            </a>
+            <a href="{% url 'transactions:savings_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-3xl text-sm font-medium transition-all duration-200 {% active_nav request '^/transactions/savings' %}" id="sidenav-savings">
+                <span class="material-symbols-outlined icon-md">flag</span>
+                <span>Savings</span>
+            </a>
+            <a href="{% url 'reports:reports' %}" class="flex items-center gap-3 px-3 py-3 rounded-3xl text-sm font-medium transition-all duration-200 {% active_nav request '^/reports' %}" id="sidenav-reports">
+                <span class="material-symbols-outlined icon-md">bar_chart</span>
+                <span>Reports</span>
+            </a>
+            <a href="{% url 'transactions:category_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-3xl text-sm font-medium transition-all duration-200 {% active_nav request '^/transactions/categories' %}" id="sidenav-categories">
+                <span class="material-symbols-outlined icon-md">category</span>
+                <span>Categories</span>
+            </a>
+        </nav>
+
+        <!-- Bottom section -->
+        <div class="px-3 pb-4 space-y-1">
+            <a href="{% url 'accounts:profile' %}" class="flex items-center gap-3 px-3 py-3 rounded-3xl text-sm font-medium transition-all duration-200 {% active_nav request '^/accounts/profile' %}" id="sidenav-profile">
+                <span class="material-symbols-outlined icon-md">person</span>
+                <span>Profile</span>
+            </a>
+            <a href="{% url 'accounts:logout' %}" class="flex items-center gap-3 px-3 py-3 rounded-3xl text-sm font-medium text-m3-error dark:text-m3-error-dark hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <span class="material-symbols-outlined icon-md">logout</span>
+                <span>Log Out</span>
+            </a>
+        </div>
+    </aside>
+    {% endif %}
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <div class="{% if request.user.is_authenticated %}lg:ml-64{% endif %} min-h-screen pb-20 lg:pb-6">
+        <div class="max-w-2xl mx-auto lg:max-w-5xl">
+
+            {% block top_bar %}{% endblock %}
+
+            <!-- Flash Messages -->
+            {% if messages %}
+            <div id="flash-messages" class="px-4 pt-2 space-y-2 lg:px-6">
+                {% for message in messages %}
+                <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in
+                    {% if message.tags == 'success' %}bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300
+                    {% elif message.tags == 'error' %}bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300
+                    {% elif message.tags == 'warning' %}bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300
+                    {% else %}bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300{% endif %}">
+                    {% if message.tags == 'success' %}
+                    <span class="material-symbols-outlined icon-sm">check_circle</span>
+                    {% elif message.tags == 'error' %}
+                    <span class="material-symbols-outlined icon-sm">error</span>
+                    {% elif message.tags == 'warning' %}
+                    <span class="material-symbols-outlined icon-sm">warning</span>
+                    {% else %}
+                    <span class="material-symbols-outlined icon-sm">info</span>
+                    {% endif %}
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Page Content -->
+            <main class="{% block main_class %}px-4 py-4 lg:px-6{% endblock %}">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+
+        <!-- ===== FAB + TYPE SELECTOR ===== -->
+        {% if request.user.is_authenticated %}
+        <!-- FAB Button (Extended → collapses on scroll) -->
+        <button onclick="document.getElementById('type-sheet').classList.remove('hidden')"
+           class="fixed bottom-20 right-4 lg:bottom-8 lg:right-8 z-40 h-14 lg:h-16 bg-m3-primary dark:bg-m3-primary-dark rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 active:scale-95 overflow-hidden"
+           id="fab-add" style="width:3.5rem;">
+            <span class="material-symbols-outlined text-m3-on-primary dark:text-m3-on-primary-dark transition-all duration-300" style="font-size:22px;" id="fab-icon">edit</span>
+            <span class="text-sm font-bold text-m3-on-primary dark:text-m3-on-primary-dark whitespace-nowrap transition-all duration-300" id="fab-label" style="max-width:0;opacity:0;padding-right:0;overflow:hidden;">New Entry</span>
+        </button>
+        <script>
+        (function() {
+            let lastY = 0, expanded = false;
+            const fab = document.getElementById('fab-add');
+            const icon = document.getElementById('fab-icon');
+            const label = document.getElementById('fab-label');
+            if (!fab || !icon || !label) return;
+
+            let nav = null;
+
+            function collapse() {
+                if (!expanded) return;
+                expanded = false;
+                if (!nav) nav = document.getElementById('bottom-nav');
+                fab.style.width = '3.5rem';
+                icon.style.paddingLeft = '0';
+                icon.style.paddingRight = '0';
+                label.style.maxWidth = '0';
+                label.style.opacity = '0';
+                label.style.paddingRight = '0';
+                if (nav) nav.style.transform = 'translateY(100%)';
+                fab.style.bottom = '1rem';
+            }
+            function expand() {
+                if (expanded) return;
+                expanded = true;
+                if (!nav) nav = document.getElementById('bottom-nav');
+                fab.style.width = '155px';
+                icon.style.paddingLeft = '0.875rem';
+                icon.style.paddingRight = '0.375rem';
+                label.style.maxWidth = '100px';
+                label.style.opacity = '1';
+                label.style.paddingRight = '0.875rem';
+                if (nav) nav.style.transform = 'translateY(0)';
+                fab.style.bottom = '';
+            }
+
+            window.addEventListener('scroll', function() {
+                const y = window.scrollY;
+                if (y <= 10) {
+                    expand();
+                } else if (y < lastY) {
+                    expand();
+                } else if (y > lastY) {
+                    collapse();
+                }
+                lastY = y;
+            }, { passive: true });
+
+            // Expand after a brief moment so transition is visible
+            setTimeout(expand, 100);
+        })();
+        </script>
+
+        <!-- Type Selector Bottom Sheet -->
+        <div id="type-sheet" class="hidden fixed inset-0 z-[60]" onclick="if(event.target===this) this.classList.add('hidden')">
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-black/40 animate-overlay"></div>
+            <!-- Sheet -->
+            <div class="absolute bottom-0 left-0 right-0 animate-slide-up">
+                <div class="max-w-lg mx-auto bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-t-3xl p-6 pb-8 relative">
+                    <!-- Handle -->
+                    <div class="w-10 h-1 bg-m3-outline-variant dark:bg-m3-outline-variant-dark rounded-full mx-auto mb-5"></div>
+                    <h3 class="text-lg font-bold text-m3-on-surface dark:text-m3-on-surface-dark text-center mb-5">What would you like to add?</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Income -->
+                        <a href="{% url 'transactions:create' %}?type=income"
+                           class="flex flex-col items-center gap-3 p-5 bg-green-50 dark:bg-green-900/20 rounded-2xl hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors active:scale-[0.97]">
+                            <div class="w-14 h-14 bg-income rounded-2xl flex items-center justify-center">
+                                <span class="material-symbols-outlined text-white" style="font-size:28px;">arrow_upward</span>
+                            </div>
+                            <span class="text-sm font-bold text-income-dark dark:text-income">Income</span>
+                        </a>
+                        <!-- Expense -->
+                        <a href="{% url 'transactions:create' %}?type=expense"
+                           class="flex flex-col items-center gap-3 p-5 bg-red-50 dark:bg-red-900/20 rounded-2xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors active:scale-[0.97]">
+                            <div class="w-14 h-14 bg-expense rounded-2xl flex items-center justify-center">
+                                <span class="material-symbols-outlined text-white" style="font-size:28px;">arrow_downward</span>
+                            </div>
+                            <span class="text-sm font-bold text-expense-dark dark:text-expense">Expense</span>
+                        </a>
+                    </div>
+                    <!-- Cancel -->
+                    <button onclick="document.getElementById('type-sheet').classList.add('hidden')"
+                            class="w-full mt-4 py-3 bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark text-m3-on-surface dark:text-m3-on-surface-dark text-sm font-medium rounded-3xl hover:opacity-90 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% block modals %}{% endblock %}
+
+        <!-- ===== MOBILE BOTTOM NAV (< lg) ===== -->
+        {% if request.user.is_authenticated %}
+        <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 lg:hidden bg-m3-surface-container dark:bg-m3-surface-container-dark border-t border-m3-outline-variant dark:border-m3-outline-variant-dark z-50 transition-transform duration-300">
+            <div class="flex items-center justify-evenly py-1.5">
+                <a href="{% url 'transactions:dashboard' %}" class="flex flex-col items-center gap-0.5 py-1 min-w-[48px] text-m3-on-surface dark:text-m3-on-surface-dark transition-all" id="nav-dashboard">
+                    <span class="px-5 h-8 flex items-center justify-center rounded-full transition-colors {% active_nav request '^/$' 'bg-m3-secondary-container dark:bg-m3-secondary-container-dark text-m3-on-secondary-container dark:text-m3-on-secondary-container-dark' 'text-m3-on-surface-variant dark:text-m3-on-surface-variant-dark' %}">
+                        <span class="material-symbols-outlined text-[24px]">home</span>
+                    </span>
+                    <span class="text-xs transition-all {% active_nav request '^/$' 'font-bold' 'font-medium' %}">Home</span>
+                </a>
+                <a href="{% url 'transactions:list' %}" class="flex flex-col items-center gap-0.5 py-1 min-w-[48px] text-m3-on-surface dark:text-m3-on-surface-dark transition-all" id="nav-transactions">
+                    <span class="px-5 h-8 flex items-center justify-center rounded-full transition-colors {% active_nav request '^/transactions' 'bg-m3-secondary-container dark:bg-m3-secondary-container-dark text-m3-on-secondary-container dark:text-m3-on-secondary-container-dark' 'text-m3-on-surface-variant dark:text-m3-on-surface-variant-dark' %}">
+                        <span class="material-symbols-outlined text-[24px]">receipt_long</span>
+                    </span>
+                    <span class="text-xs transition-all {% active_nav request '^/transactions' 'font-bold' 'font-medium' %}">History</span>
+                </a>
+                <a href="{% url 'transactions:budget_list' %}" class="flex flex-col items-center gap-0.5 py-1 min-w-[48px] text-m3-on-surface dark:text-m3-on-surface-dark transition-all" id="nav-budgets">
+                    <span class="px-5 h-8 flex items-center justify-center rounded-full transition-colors {% active_nav request '^/budgets' 'bg-m3-secondary-container dark:bg-m3-secondary-container-dark text-m3-on-secondary-container dark:text-m3-on-secondary-container-dark' 'text-m3-on-surface-variant dark:text-m3-on-surface-variant-dark' %}">
+                        <span class="material-symbols-outlined text-[24px]">savings</span>
+                    </span>
+                    <span class="text-xs transition-all {% active_nav request '^/budgets' 'font-bold' 'font-medium' %}">Budget</span>
+                </a>
+                <a href="{% url 'reports:reports' %}" class="flex flex-col items-center gap-0.5 py-1 min-w-[48px] text-m3-on-surface dark:text-m3-on-surface-dark transition-all" id="nav-reports">
+                    <span class="px-5 h-8 flex items-center justify-center rounded-full transition-colors {% active_nav request '^/reports' 'bg-m3-secondary-container dark:bg-m3-secondary-container-dark text-m3-on-secondary-container dark:text-m3-on-secondary-container-dark' 'text-m3-on-surface-variant dark:text-m3-on-surface-variant-dark' %}">
+                        <span class="material-symbols-outlined text-[24px]">bar_chart</span>
+                    </span>
+                    <span class="text-xs transition-all {% active_nav request '^/reports' 'font-bold' 'font-medium' %}">Reports</span>
+                </a>
+                <a href="{% url 'transactions:savings_list' %}" class="flex flex-col items-center gap-0.5 py-1 min-w-[48px] text-m3-on-surface dark:text-m3-on-surface-dark transition-all" id="nav-savings">
+                    <span class="px-5 h-8 flex items-center justify-center rounded-full transition-colors {% active_nav request '^/savings' 'bg-m3-secondary-container dark:bg-m3-secondary-container-dark text-m3-on-secondary-container dark:text-m3-on-secondary-container-dark' 'text-m3-on-surface-variant dark:text-m3-on-surface-variant-dark' %}">
+                        <span class="material-symbols-outlined text-[24px]">flag</span>
+                    </span>
+                    <span class="text-xs transition-all {% active_nav request '^/savings' 'font-bold' 'font-medium' %}">Savings</span>
+                </a>
+            </div>
+        </nav>
+        {% endif %}
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Auto-hide flash messages
+        setTimeout(() => {
+            const el = document.getElementById('flash-messages');
+            if (el) el.style.display = 'none';
+        }, 4000);
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit{% else %}New{% endif %} Savings Goal{% endblock %}
+
+{% block top_bar %}
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3">
+    <a href="{% url 'transactions:savings_list' %}" class="w-10 h-10 rounded-xl bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark flex items-center justify-center hover:bg-m3-surface-container-highest transition-colors">
+        <span class="material-symbols-outlined icon-md text-m3-on-surface dark:text-m3-on-surface-dark">arrow_back</span>
+    </a>
+    <h1 class="text-lg font-bold text-m3-on-surface dark:text-m3-on-surface-dark">{% if object %}Edit{% else %}New{% endif %} Savings Goal</h1>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in max-w-lg mx-auto">
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% if form.errors %}
+        <div class="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 text-m3-error dark:text-m3-error-dark text-sm rounded-xl px-4 py-3">
+            <span class="material-symbols-outlined icon-sm">error</span>
+            <div>{% for field in form %}{% for error in field.errors %}<p><strong>{{ field.label }}:</strong> {{ error }}</p>{% endfor %}{% endfor %}</div>
+        </div>
+        {% endif %}
+        <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-5 space-y-4">
+            <div><label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Goal Name</label>{{ form.name }}</div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Target Amount</label>{{ form.target_amount }}</div>
+                <div><label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Already Saved</label>{{ form.current_amount }}</div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Icon</label>{{ form.icon }}</div>
+                <div><label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Color</label>{{ form.color }}</div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mb-1.5">Target Date (optional)</label>
+                {{ form.deadline }}
+                <p class="text-xs text-m3-outline dark:text-m3-outline-dark mt-1">When do you want to reach this goal?</p>
+            </div>
+        </div>
+        <button type="submit" class="w-full py-3.5 bg-m3-primary dark:bg-m3-primary-dark text-m3-on-primary dark:text-m3-on-primary-dark font-medium rounded-3xl hover:opacity-90 transition-all duration-200 active:scale-[0.98]">
+            {% if object %}Update{% else %}Create{% endif %} Goal
+        </button>
+    </form>
+</div>
+{% endblock %}
