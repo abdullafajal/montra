@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Page Not Found{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-fade-in">
+    <div class="mb-6 text-m3-error dark:text-m3-error-dark">
+        <span class="material-symbols-outlined" style="font-size: 80px;">error</span>
+    </div>
+    
+    <h1 class="text-4xl font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-4">404</h1>
+    
+    <h2 class="text-xl font-medium text-m3-on-surface-variant dark:text-m3-on-surface-variant-dark mb-6">
+        Oops! Page not found
+    </h2>
+    
+    <p class="text-m3-on-surface-variant dark:text-m3-on-surface-variant-dark max-w-sm mb-8 leading-relaxed">
+        The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+    </p>
+
+    <a href="{% url 'transactions:dashboard' %}" 
+       class="inline-flex items-center justify-center px-6 py-3 rounded-full bg-m3-primary dark:bg-m3-primary-dark text-m3-on-primary dark:text-m3-on-primary-dark font-medium shadow-md transition-all hover:shadow-lg hover:opacity-95 active:scale-95">
+        <span class="material-symbols-outlined mr-2">home</span>
+        Back to Dashboard
+    </a>
+</div>
+{% endblock %}
