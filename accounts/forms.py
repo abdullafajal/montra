@@ -46,10 +46,11 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ["currency", "theme", "avatar"]
+        fields = ["currency", "theme", "show_hero_image", "avatar"]
         widgets = {
             "currency": forms.Select(attrs={"class": tw}),
             "theme": forms.Select(attrs={"class": tw}),
+            "show_hero_image": forms.CheckboxInput(attrs={"class": "w-5 h-5 rounded border-m3-outline text-m3-primary focus:ring-m3-primary transition-all"}),
             "avatar": forms.FileInput(attrs={"class": tw}),
         }
 
@@ -60,6 +61,7 @@ class ProfileForm(forms.ModelForm):
             self.fields["first_name"].initial = self.user.first_name
             self.fields["last_name"].initial = self.user.last_name
             self.fields["email"].initial = self.user.email
+        self.fields["show_hero_image"].label = "Show Cinematic Hero"
 
     def save(self, commit=True):
         profile = super().save(commit=False)

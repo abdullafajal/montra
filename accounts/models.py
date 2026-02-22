@@ -35,6 +35,7 @@ class UserProfile(models.Model):
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default="USD")
     theme = models.CharField(max_length=5, choices=THEME_CHOICES, default="light")
+    show_hero_image = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def get_currency_symbol(self):
