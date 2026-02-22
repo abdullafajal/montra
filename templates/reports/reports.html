@@ -6,14 +6,14 @@
 {% block top_bar %}
 <div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
     <div class="flex items-center gap-3">
-        <a href="{% url 'transactions:dashboard' %}" class="w-10 h-10 rounded-xl bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark flex items-center justify-center hover:bg-m3-surface-container-highest transition-colors lg:hidden">
-            <span class="material-symbols-outlined icon-md text-m3-on-surface dark:text-m3-on-surface-dark">arrow_back</span>
+        <a href="{% url 'transactions:dashboard' %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all lg:hidden">
+            <span class="material-symbols-outlined icon-md text-mn-text dark:text-mn-text-dark">arrow_back</span>
         </a>
-        <h1 class="text-xl font-bold text-m3-on-surface dark:text-m3-on-surface-dark">Reports</h1>
+        <h1 class="text-xl font-bold text-mn-text dark:text-mn-text-dark">Reports</h1>
     </div>
     <form method="get" class="flex items-center gap-2">
-        <span class="material-symbols-outlined icon-sm text-m3-outline dark:text-m3-outline-dark">calendar_today</span>
-        <select name="year" onchange="this.form.submit()" class="px-3 py-2 rounded-3xl text-sm bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark text-m3-on-surface dark:text-m3-on-surface-dark border border-m3-outline-variant dark:border-m3-outline-variant-dark outline-none">
+        <span class="material-symbols-outlined icon-sm text-mn-muted dark:text-mn-muted-dark">calendar_today</span>
+        <select name="year" onchange="this.form.submit()" class="!px-3 !py-2 !rounded-2xl text-sm !bg-mn-card dark:!bg-mn-card-dark text-mn-text dark:text-mn-text-dark !border !border-mn-border dark:!border-mn-border-dark !shadow-soft">
             {% for y in available_years %}
             <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
             {% endfor %}
@@ -26,35 +26,45 @@
 <div class="animate-fade-in">
     <!-- Annual Summary -->
     <div class="grid grid-cols-3 gap-3 mb-6">
-        <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4 text-center">
-            <span class="material-symbols-outlined icon-sm text-income mb-1">arrow_upward</span>
-            <p class="text-xs text-m3-outline dark:text-m3-outline-dark">Income</p>
-            <p class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mt-1">{{ annual_income|currency:currency_symbol }}</p>
+        <div class="bg-mn-dark p-4 rounded-2xl text-center shadow-soft">
+            <div class="w-9 h-9 bg-mn-accent rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span class="material-symbols-outlined icon-sm text-mn-dark">arrow_upward</span>
+            </div>
+            <p class="text-xs text-white/50">Income</p>
+            <p class="text-sm font-bold text-mn-accent mt-1">{{ annual_income|currency:currency_symbol }}</p>
         </div>
-        <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4 text-center">
-            <span class="material-symbols-outlined icon-sm text-expense mb-1">arrow_downward</span>
-            <p class="text-xs text-m3-outline dark:text-m3-outline-dark">Expenses</p>
-            <p class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mt-1">{{ annual_expenses|currency:currency_symbol }}</p>
+        <div class="bg-mn-dark p-4 rounded-2xl text-center shadow-soft">
+            <div class="w-9 h-9 bg-mn-accent rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span class="material-symbols-outlined icon-sm text-mn-dark">arrow_downward</span>
+            </div>
+            <p class="text-xs text-white/50">Expenses</p>
+            <p class="text-sm font-bold text-mn-accent mt-1">{{ annual_expenses|currency:currency_symbol }}</p>
         </div>
-        <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4 text-center">
-            <span class="material-symbols-outlined icon-sm text-m3-primary dark:text-m3-primary-dark mb-1">savings</span>
-            <p class="text-xs text-m3-outline dark:text-m3-outline-dark">Net</p>
-            <p class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mt-1">{{ annual_net|currency:currency_symbol }}</p>
+        <div class="bg-mn-dark p-4 rounded-2xl text-center shadow-soft">
+            <div class="w-9 h-9 bg-mn-accent rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span class="material-symbols-outlined icon-sm text-mn-dark">savings</span>
+            </div>
+            <p class="text-xs text-white/50">Net</p>
+            <p class="text-sm font-bold text-mn-accent mt-1">{{ annual_net|currency:currency_symbol }}</p>
         </div>
     </div>
 
     <!-- Charts Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-5">
-            <h3 class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-3 flex items-center gap-2">
-                <span class="material-symbols-outlined icon-sm text-m3-primary dark:text-m3-primary-dark">bar_chart</span>
+        <div class="mn-card p-5">
+            <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 flex items-center gap-3">
+                <div class="w-8 h-8 bg-mn-accent rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-mn-dark" style="font-size:18px;">bar_chart</span>
+                </div>
                 Monthly Overview
             </h3>
             <canvas id="monthlyChart" height="200"></canvas>
         </div>
-        <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-5">
-            <h3 class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-3 flex items-center gap-2">
-                <span class="material-symbols-outlined icon-sm text-m3-primary dark:text-m3-primary-dark">bar_chart</span>
+        <div class="mn-card p-5">
+            <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 flex items-center gap-3">
+                <div class="w-8 h-8 bg-mn-accent rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-mn-dark" style="font-size:18px;">bar_chart</span>
+                </div>
                 Spending Breakdown
             </h3>
             <canvas id="categoryChart" height="220"></canvas>
@@ -62,9 +72,11 @@
     </div>
 
     <!-- Savings Trend -->
-    <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-5 mb-6">
-        <h3 class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-3 flex items-center gap-2">
-            <span class="material-symbols-outlined icon-sm text-m3-primary dark:text-m3-primary-dark">show_chart</span>
+    <div class="mn-card p-5 mb-6">
+        <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 flex items-center gap-3">
+            <div class="w-8 h-8 bg-mn-accent rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-mn-dark" style="font-size:18px;">show_chart</span>
+            </div>
             Savings Trend
         </h3>
         <canvas id="savingsChart" height="160"></canvas>
@@ -73,42 +85,46 @@
     <!-- Top Categories + Monthly Summary -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <!-- Top Categories -->
-        <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-5">
-            <h3 class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-3 flex items-center gap-2">
-                <span class="material-symbols-outlined icon-sm text-m3-primary dark:text-m3-primary-dark">leaderboard</span>
+        <div class="mn-card p-5">
+            <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 flex items-center gap-3">
+                <div class="w-8 h-8 bg-mn-accent rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-mn-dark" style="font-size:18px;">leaderboard</span>
+                </div>
                 Top Categories
             </h3>
             <div class="space-y-3">
                 {% for cat in top_categories %}
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background-color: {{ cat.color }}15;">
-                        <span class="material-symbols-outlined" style="color: {{ cat.color }}; font-size:18px;">{{ cat.icon }}</span>
+                    <div class="w-9 h-9 bg-mn-accent rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined text-mn-dark" style="font-size:18px;">{{ cat.icon }}</span>
                     </div>
                     <div class="flex-1">
                         <div class="flex justify-between text-sm mb-1">
-                            <span class="font-medium text-m3-on-surface dark:text-m3-on-surface-dark">{{ cat.name }}</span>
-                            <span class="font-bold text-m3-on-surface dark:text-m3-on-surface-dark">{{ cat.total|currency:currency_symbol }}</span>
+                            <span class="font-medium text-mn-text dark:text-mn-text-dark">{{ cat.name }}</span>
+                            <span class="font-bold text-mn-text dark:text-mn-text-dark">{{ cat.total|currency:currency_symbol }}</span>
                         </div>
-                        <div class="w-full h-1.5 bg-m3-surface-container-highest dark:bg-m3-surface-container-highest-dark rounded-full overflow-hidden">
-                            <div class="h-full rounded-full" style="width: {{ cat.pct }}%; background-color: {{ cat.color }};"></div>
+                        <div class="w-full h-1.5 bg-mn-bg dark:bg-mn-bg-dark rounded-full overflow-hidden">
+                            <div class="h-full bg-mn-accent rounded-full" style="width: {{ cat.pct }}%;"></div>
                         </div>
                     </div>
                 </div>
                 {% empty %}
-                <p class="text-sm text-m3-outline dark:text-m3-outline-dark text-center py-4">No data</p>
+                <p class="text-sm text-mn-muted dark:text-mn-muted-dark text-center py-4">No data</p>
                 {% endfor %}
             </div>
         </div>
 
         <!-- Monthly Summary Table -->
-        <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-5 overflow-x-auto">
-            <h3 class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-3 flex items-center gap-2">
-                <span class="material-symbols-outlined icon-sm text-m3-primary dark:text-m3-primary-dark">table_chart</span>
+        <div class="mn-card p-5 overflow-x-auto">
+            <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 flex items-center gap-3">
+                <div class="w-8 h-8 bg-mn-accent rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-mn-dark" style="font-size:18px;">table_chart</span>
+                </div>
                 Monthly Summary
             </h3>
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-xs text-m3-outline dark:text-m3-outline-dark uppercase">
+                    <tr class="text-xs text-mn-muted dark:text-mn-muted-dark uppercase">
                         <th class="text-left py-2">Month</th>
                         <th class="text-right py-2">Income</th>
                         <th class="text-right py-2">Expenses</th>
@@ -117,16 +133,16 @@
                 </thead>
                 <tbody>
                     {% for row in monthly_summary %}
-                    <tr class="border-t border-m3-outline-variant/30 dark:border-m3-outline-variant-dark/30">
-                        <td class="py-2.5 text-m3-on-surface dark:text-m3-on-surface-dark font-medium">{{ row.month }}</td>
+                    <tr class="border-t border-mn-border dark:border-mn-border-dark">
+                        <td class="py-2.5 text-mn-text dark:text-mn-text-dark font-medium">{{ row.month }}</td>
                         {% if row.income or row.expenses %}
-                        <td class="py-2.5 text-right text-income font-medium">{{ row.income|currency:currency_symbol }}</td>
-                        <td class="py-2.5 text-right text-expense font-medium">{{ row.expenses|currency:currency_symbol }}</td>
-                        <td class="py-2.5 text-right font-bold text-m3-on-surface dark:text-m3-on-surface-dark">{{ row.net|currency:currency_symbol }}</td>
+                        <td class="py-2.5 text-right text-[#A7C431] font-medium">{{ row.income|currency:currency_symbol }}</td>
+                        <td class="py-2.5 text-right text-mn-text dark:text-mn-text-dark font-medium">{{ row.expenses|currency:currency_symbol }}</td>
+                        <td class="py-2.5 text-right font-bold text-mn-text dark:text-mn-text-dark">{{ row.net|currency:currency_symbol }}</td>
                         {% else %}
-                        <td class="py-2.5 text-right text-m3-outline dark:text-m3-outline-dark">—</td>
-                        <td class="py-2.5 text-right text-m3-outline dark:text-m3-outline-dark">—</td>
-                        <td class="py-2.5 text-right text-m3-outline dark:text-m3-outline-dark">—</td>
+                        <td class="py-2.5 text-right text-mn-muted dark:text-mn-muted-dark">—</td>
+                        <td class="py-2.5 text-right text-mn-muted dark:text-mn-muted-dark">—</td>
+                        <td class="py-2.5 text-right text-mn-muted dark:text-mn-muted-dark">—</td>
                         {% endif %}
                     </tr>
                     {% endfor %}
@@ -137,11 +153,11 @@
 
     <!-- Export Buttons -->
     <div class="flex gap-3 mb-4">
-        <button onclick="openExportSheet('csv')" class="flex-1 flex items-center justify-center gap-2 py-3 bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark text-m3-on-surface dark:text-m3-on-surface-dark font-medium rounded-3xl hover:bg-m3-surface-container-highest transition-colors">
+        <button onclick="openExportSheet('csv')" class="flex-1 flex items-center justify-center gap-2 py-3 bg-mn-card dark:bg-mn-card-dark text-mn-text dark:text-mn-text-dark font-semibold rounded-2xl shadow-soft hover:shadow-elevated transition-all">
             <span class="material-symbols-outlined icon-sm">download</span>
             Export CSV
         </button>
-        <button onclick="openExportSheet('pdf')" class="flex-1 flex items-center justify-center gap-2 py-3 bg-m3-primary dark:bg-m3-primary-dark text-m3-on-primary dark:text-m3-on-primary-dark font-medium rounded-3xl hover:opacity-90 transition-colors">
+        <button onclick="openExportSheet('pdf')" class="flex-1 flex items-center justify-center gap-2 py-3 bg-mn-dark dark:bg-mn-accent text-white dark:text-mn-dark font-semibold rounded-2xl shadow-soft hover:opacity-90 transition-all">
             <span class="material-symbols-outlined icon-sm">picture_as_pdf</span>
             Export PDF
         </button>
@@ -156,45 +172,45 @@
     <div class="absolute inset-0 bg-black/40 animate-overlay"></div>
     <!-- Sheet -->
     <div class="absolute bottom-0 left-0 right-0 animate-slide-up">
-        <div class="max-w-lg mx-auto bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-t-3xl p-6 pb-8 relative">
+        <div class="max-w-lg mx-auto bg-mn-card dark:bg-mn-card-dark rounded-t-3xl p-6 pb-8 relative shadow-elevated">
             <!-- Handle -->
-            <div class="w-10 h-1 bg-m3-outline-variant dark:bg-m3-outline-variant-dark rounded-full mx-auto mb-5"></div>
-            <h3 class="text-lg font-bold text-m3-on-surface dark:text-m3-on-surface-dark text-center mb-5" id="exportSheetTitle">Export Transactions</h3>
+            <div class="w-10 h-1 bg-mn-border dark:bg-mn-border-dark rounded-full mx-auto mb-5"></div>
+            <h3 class="text-lg font-bold text-mn-text dark:text-mn-text-dark text-center mb-5" id="exportSheetTitle">Export Transactions</h3>
             <div class="grid grid-cols-3 gap-3">
-                <button onclick="doExport('1m')" class="flex flex-col items-center gap-3 p-4 bg-m3-primary-container/30 dark:bg-m3-primary-container-dark/30 rounded-2xl hover:bg-m3-primary-container/50 dark:hover:bg-m3-primary-container-dark/50 transition-colors active:scale-[0.97]">
-                    <div class="w-12 h-12 bg-m3-primary dark:bg-m3-primary-dark rounded-2xl flex items-center justify-center">
-                        <span class="material-symbols-outlined text-m3-on-primary dark:text-m3-on-primary-dark" style="font-size:24px;">calendar_today</span>
+                <button onclick="doExport('1m')" class="flex flex-col items-center gap-3 p-4 bg-mn-accent/10 rounded-2xl hover:bg-mn-accent/20 transition-colors active:scale-[0.97]">
+                    <div class="w-12 h-12 bg-mn-accent rounded-2xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-mn-dark" style="font-size:24px;">calendar_today</span>
                     </div>
-                    <span class="text-xs font-bold text-m3-on-surface dark:text-m3-on-surface-dark">This Month</span>
+                    <span class="text-xs font-bold text-mn-text dark:text-mn-text-dark">This Month</span>
                 </button>
-                <button onclick="doExport('3m')" class="flex flex-col items-center gap-3 p-4 bg-m3-primary-container/30 dark:bg-m3-primary-container-dark/30 rounded-2xl hover:bg-m3-primary-container/50 dark:hover:bg-m3-primary-container-dark/50 transition-colors active:scale-[0.97]">
-                    <div class="w-12 h-12 bg-m3-primary dark:bg-m3-primary-dark rounded-2xl flex items-center justify-center">
-                        <span class="material-symbols-outlined text-m3-on-primary dark:text-m3-on-primary-dark" style="font-size:24px;">date_range</span>
+                <button onclick="doExport('3m')" class="flex flex-col items-center gap-3 p-4 bg-mn-accent/10 rounded-2xl hover:bg-mn-accent/20 transition-colors active:scale-[0.97]">
+                    <div class="w-12 h-12 bg-mn-accent rounded-2xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-mn-dark" style="font-size:24px;">date_range</span>
                     </div>
-                    <span class="text-xs font-bold text-m3-on-surface dark:text-m3-on-surface-dark">3 Months</span>
+                    <span class="text-xs font-bold text-mn-text dark:text-mn-text-dark">3 Months</span>
                 </button>
-                <button onclick="doExport('6m')" class="flex flex-col items-center gap-3 p-4 bg-m3-primary-container/30 dark:bg-m3-primary-container-dark/30 rounded-2xl hover:bg-m3-primary-container/50 dark:hover:bg-m3-primary-container-dark/50 transition-colors active:scale-[0.97]">
-                    <div class="w-12 h-12 bg-m3-primary dark:bg-m3-primary-dark rounded-2xl flex items-center justify-center">
-                        <span class="material-symbols-outlined text-m3-on-primary dark:text-m3-on-primary-dark" style="font-size:24px;">date_range</span>
+                <button onclick="doExport('6m')" class="flex flex-col items-center gap-3 p-4 bg-mn-accent/10 rounded-2xl hover:bg-mn-accent/20 transition-colors active:scale-[0.97]">
+                    <div class="w-12 h-12 bg-mn-accent rounded-2xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-mn-dark" style="font-size:24px;">date_range</span>
                     </div>
-                    <span class="text-xs font-bold text-m3-on-surface dark:text-m3-on-surface-dark">6 Months</span>
+                    <span class="text-xs font-bold text-mn-text dark:text-mn-text-dark">6 Months</span>
                 </button>
-                <button onclick="doExport('1y')" class="flex flex-col items-center gap-3 p-4 bg-m3-primary-container/30 dark:bg-m3-primary-container-dark/30 rounded-2xl hover:bg-m3-primary-container/50 dark:hover:bg-m3-primary-container-dark/50 transition-colors active:scale-[0.97]">
-                    <div class="w-12 h-12 bg-m3-primary dark:bg-m3-primary-dark rounded-2xl flex items-center justify-center">
-                        <span class="material-symbols-outlined text-m3-on-primary dark:text-m3-on-primary-dark" style="font-size:24px;">calendar_month</span>
+                <button onclick="doExport('1y')" class="flex flex-col items-center gap-3 p-4 bg-mn-accent/10 rounded-2xl hover:bg-mn-accent/20 transition-colors active:scale-[0.97]">
+                    <div class="w-12 h-12 bg-mn-accent rounded-2xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-mn-dark" style="font-size:24px;">calendar_month</span>
                     </div>
-                    <span class="text-xs font-bold text-m3-on-surface dark:text-m3-on-surface-dark">This Year</span>
+                    <span class="text-xs font-bold text-mn-text dark:text-mn-text-dark">This Year</span>
                 </button>
-                <button onclick="doExport('all')" class="flex flex-col items-center gap-3 p-4 bg-m3-primary-container/30 dark:bg-m3-primary-container-dark/30 rounded-2xl hover:bg-m3-primary-container/50 dark:hover:bg-m3-primary-container-dark/50 transition-colors active:scale-[0.97]">
-                    <div class="w-12 h-12 bg-m3-primary dark:bg-m3-primary-dark rounded-2xl flex items-center justify-center">
-                        <span class="material-symbols-outlined text-m3-on-primary dark:text-m3-on-primary-dark" style="font-size:24px;">all_inclusive</span>
+                <button onclick="doExport('all')" class="flex flex-col items-center gap-3 p-4 bg-mn-accent/10 rounded-2xl hover:bg-mn-accent/20 transition-colors active:scale-[0.97]">
+                    <div class="w-12 h-12 bg-mn-accent rounded-2xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-mn-dark" style="font-size:24px;">all_inclusive</span>
                     </div>
-                    <span class="text-xs font-bold text-m3-on-surface dark:text-m3-on-surface-dark">All Time</span>
+                    <span class="text-xs font-bold text-mn-text dark:text-mn-text-dark">All Time</span>
                 </button>
             </div>
             <!-- Cancel -->
             <button onclick="document.getElementById('exportSheet').classList.add('hidden')"
-                    class="w-full mt-4 py-3 bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark text-m3-on-surface dark:text-m3-on-surface-dark text-sm font-medium rounded-3xl hover:opacity-90 transition-colors">
+                    class="w-full mt-4 py-3 bg-mn-bg dark:bg-mn-bg-dark text-mn-text dark:text-mn-text-dark text-sm font-medium rounded-2xl hover:opacity-90 transition-colors">
                 Cancel
             </button>
         </div>
@@ -205,10 +221,10 @@
 {% block extra_js %}
 <script>
     const isDark = document.documentElement.classList.contains('dark');
-    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-    const textColor = isDark ? '#8A969E' : '#6E7B84';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
+    const textColor = isDark ? '#6B6B6B' : '#9E9E9E';
 
-    Chart.defaults.font.family = "'Roboto', sans-serif";
+    Chart.defaults.font.family = "'Inter', sans-serif";
     Chart.defaults.font.size = 11;
     Chart.defaults.color = textColor;
 
@@ -218,8 +234,8 @@
         data: {
             labels: {{ monthly_labels|safe }},
             datasets: [
-                { label: 'Income', data: {{ monthly_income_data|safe }}, backgroundColor: '#4DB6AC', borderRadius: 8, barPercentage: 0.6 },
-                { label: 'Expenses', data: {{ monthly_expense_data|safe }}, backgroundColor: '#78909C', borderRadius: 8, barPercentage: 0.6 }
+                { label: 'Income', data: {{ monthly_income_data|safe }}, backgroundColor: '#C8E64A', borderRadius: 8, barPercentage: 0.6 },
+                { label: 'Expenses', data: {{ monthly_expense_data|safe }}, backgroundColor: '#1A1A1A', borderRadius: 8, barPercentage: 0.6 }
             ]
         },
         options: {
@@ -266,10 +282,10 @@
             datasets: [{
                 label: 'Net Savings',
                 data: {{ savings_data|safe }},
-                borderColor: '#455A64',
-                backgroundColor: isDark ? 'rgba(176,190,197,0.1)' : 'rgba(69,90,100,0.1)',
+                borderColor: '#C8E64A',
+                backgroundColor: isDark ? 'rgba(200,230,74,0.1)' : 'rgba(200,230,74,0.15)',
                 fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 5,
-                pointBackgroundColor: '#455A64',
+                pointBackgroundColor: '#C8E64A',
             }]
         },
         options: {
@@ -296,5 +312,6 @@
         window.location.href = base + '?period=' + period;
         document.getElementById('exportSheet').classList.add('hidden');
     }
+
 </script>
 {% endblock %}

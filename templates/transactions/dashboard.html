@@ -6,42 +6,100 @@
 {% block top_bar %}
 <div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
     <div>
-        <p class="text-sm text-m3-outline dark:text-m3-outline-dark">Good {{ greeting }},</p>
-        <h1 class="text-xl font-bold text-m3-on-surface dark:text-m3-on-surface-dark">{{ request.user.get_full_name|default:request.user.username }}</h1>
+        <p class="text-sm text-mn-muted dark:text-mn-muted-dark">Good {{ greeting }},</p>
+        <h1 class="text-xl font-bold text-mn-text dark:text-mn-text-dark">{{ request.user.get_full_name|default:request.user.username }}</h1>
     </div>
-    <a href="{% url 'accounts:profile' %}" class="w-10 h-10 bg-m3-primary-container dark:bg-m3-primary-container-dark rounded-full flex items-center justify-center text-m3-on-primary-container dark:text-m3-on-primary-container-dark font-bold text-sm">
-        {{ request.user.username|make_list|first|upper }}
-    </a>
+    <div class="flex items-center gap-3">
+        <a href="{% url 'accounts:profile' %}" class="user-avatar">
+            {{ request.user.username|make_list|first|upper }}
+        </a>
+    </div>
 </div>
 {% endblock %}
 
 {% block content %}
 <!-- Balance Card -->
-<div class="bg-gradient-to-br from-[#37474F] to-[#546E7A] dark:from-[#263238] dark:to-[#37474F] rounded-3xl p-6 text-white animate-fade-in">
-    <p class="text-sm font-medium opacity-80 mb-1">Total Balance</p>
-    <h2 class="text-3xl font-bold tracking-tight">{{ total_balance|currency:currency_symbol }}</h2>
-    <div class="grid grid-cols-3 gap-3 mt-5">
-        <div class="bg-white/15 dark:bg-white/10 rounded-2xl p-3 backdrop-blur-sm">
-            <div class="flex items-center gap-1.5 mb-1">
-                <span class="material-symbols-outlined icon-sm text-green-300">arrow_upward</span>
-                <span class="text-xs opacity-80">Income</span>
-            </div>
-            <p class="text-sm font-bold">{{ monthly_income|currency:currency_symbol }}</p>
+<div class="bg-mn-dark dark:bg-mn-card-dark rounded-3xl p-6 text-white animate-fade-in shadow-elevated overflow-hidden relative">
+    <!-- Subtle gradient overlay -->
+    <div class="absolute inset-0 opacity-[0.04]" style="background: radial-gradient(circle at top right, #C8E64A, transparent 60%);"></div>
+    <div class="relative z-10">
+        <div class="flex items-center justify-between mb-1">
+            <p class="text-sm font-medium opacity-60">Total Balance</p>
+            <span class="material-symbols-outlined icon-sm opacity-40">visibility</span>
         </div>
-        <div class="bg-white/15 dark:bg-white/10 rounded-2xl p-3 backdrop-blur-sm">
-            <div class="flex items-center gap-1.5 mb-1">
-                <span class="material-symbols-outlined icon-sm text-red-300">arrow_downward</span>
-                <span class="text-xs opacity-80">Expenses</span>
+        <h2 class="text-4xl font-bold tracking-tight text-mn-accent">{{ total_balance|currency:currency_symbol }}</h2>
+
+        <!-- Monthly income/expense inline -->
+        <div class="flex items-center gap-4 mt-3">
+            <div class="flex items-center gap-1.5">
+                <span class="w-6 h-6 flex items-center justify-center rounded-full bg-income/20">
+                    <span class="material-symbols-outlined text-income" style="font-size:14px;">arrow_upward</span>
+                </span>
+                <span class="text-xs opacity-70">{{ monthly_income|currency:currency_symbol }}</span>
             </div>
-            <p class="text-sm font-bold">{{ monthly_expenses|currency:currency_symbol }}</p>
-        </div>
-        <div class="bg-white/15 dark:bg-white/10 rounded-2xl p-3 backdrop-blur-sm">
-            <div class="flex items-center gap-1.5 mb-1">
-                <span class="material-symbols-outlined icon-sm text-amber-300">savings</span>
-                <span class="text-xs opacity-80">Savings</span>
+            <div class="flex items-center gap-1.5">
+                <span class="w-6 h-6 flex items-center justify-center rounded-full bg-expense/20">
+                    <span class="material-symbols-outlined text-expense" style="font-size:14px;">arrow_downward</span>
+                </span>
+                <span class="text-xs opacity-70">{{ monthly_expenses|currency:currency_symbol }}</span>
             </div>
-            <p class="text-sm font-bold">{{ monthly_savings|currency:currency_symbol }}</p>
         </div>
+
+        <!-- Savings badge + Card account -->
+        <div class="flex items-center justify-between mt-4">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full text-xs font-medium">
+                <span class="material-symbols-outlined" style="font-size:14px;">savings</span>
+                Saved {{ monthly_savings|currency:currency_symbol }} this month
+            </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="grid grid-cols-2 gap-3 mt-4">
+            <a href="{% url 'transactions:create' %}?type=income" class="flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/15 rounded-2xl transition-colors active:scale-[0.97]">
+                <span class="material-symbols-outlined icon-sm text-income">north_east</span>
+                <span class="text-sm font-semibold">Income</span>
+            </a>
+            <a href="{% url 'transactions:create' %}?type=expense" class="flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/15 rounded-2xl transition-colors active:scale-[0.97]">
+                <span class="material-symbols-outlined icon-sm text-expense">south_west</span>
+                <span class="text-sm font-semibold">Expense</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Income / Expense / Savings Summary -->
+<div class="grid grid-cols-3 gap-3 mt-4 animate-fade-in stagger-1">
+    <div class="mn-card p-4 text-center">
+        <div class="w-9 h-9 bg-mn-accent rounded-xl flex items-center justify-center mx-auto mb-2">
+            <span class="material-symbols-outlined icon-sm text-mn-dark">arrow_upward</span>
+        </div>
+        <p class="text-xs text-mn-muted dark:text-mn-muted-dark">Income</p>
+        <p class="text-sm font-bold text-mn-text dark:text-mn-text-dark mt-0.5">{{ monthly_income|currency:currency_symbol }}</p>
+    </div>
+    <div class="mn-card p-4 text-center">
+        <div class="w-9 h-9 bg-mn-accent rounded-xl flex items-center justify-center mx-auto mb-2">
+            <span class="material-symbols-outlined icon-sm text-mn-dark">arrow_downward</span>
+        </div>
+        <p class="text-xs text-mn-muted dark:text-mn-muted-dark">Expenses</p>
+        <p class="text-sm font-bold text-mn-text dark:text-mn-text-dark mt-0.5">{{ monthly_expenses|currency:currency_symbol }}</p>
+    </div>
+    <div class="mn-card p-4 text-center">
+        <div class="w-9 h-9 bg-mn-accent rounded-xl flex items-center justify-center mx-auto mb-2">
+            <span class="material-symbols-outlined icon-sm text-mn-dark">savings</span>
+        </div>
+        <p class="text-xs text-mn-muted dark:text-mn-muted-dark">Savings</p>
+        <p class="text-sm font-bold text-mn-text dark:text-mn-text-dark mt-0.5">{{ monthly_savings|currency:currency_symbol }}</p>
+    </div>
+</div>
+
+<!-- Promo Banner -->
+<div class="mt-4 bg-mn-accent rounded-2xl p-5 flex items-center gap-4 animate-fade-in stagger-1">
+    <div class="flex-1">
+        <p class="text-sm font-bold text-mn-dark">Start tracking money tax free</p>
+        <p class="text-xs text-mn-dark/70 mt-1">The best place for tracking expenses and income. Start saving now!</p>
+    </div>
+    <div class="w-12 h-12 bg-white/30 rounded-full flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-outlined text-mn-dark" style="font-size:28px;">savings</span>
     </div>
 </div>
 
@@ -49,9 +107,9 @@
 {% if budget_warnings %}
 <div class="mt-4 space-y-2 animate-fade-in stagger-1">
     {% for b in budget_warnings %}
-    <div class="flex items-center gap-3 px-4 py-3 bg-red-100 dark:bg-red-900/20 rounded-xl">
-        <span class="material-symbols-outlined icon-sm text-m3-error dark:text-m3-error-dark">warning</span>
-        <p class="text-sm text-m3-error dark:text-m3-error-dark font-medium">{{ b.category.name }} budget exceeded!</p>
+    <div class="flex items-center gap-3 px-4 py-3 bg-mn-dark rounded-2xl shadow-soft">
+        <span class="material-symbols-outlined icon-sm text-mn-accent">warning</span>
+        <p class="text-sm text-mn-accent font-medium">{{ b.category.name }} budget exceeded!</p>
     </div>
     {% endfor %}
 </div>
@@ -61,9 +119,11 @@
 {% if insights %}
 <div class="mt-4 space-y-2 animate-fade-in stagger-1">
     {% for insight in insights %}
-    <div class="flex items-center gap-3 bg-m3-primary-container/50 dark:bg-m3-primary-container-dark/50 rounded-xl px-4 py-3">
-        <span class="material-symbols-outlined icon-sm text-m3-primary dark:text-m3-primary-dark">lightbulb</span>
-        <p class="text-sm text-m3-on-primary-container dark:text-m3-on-primary-container-dark">{{ insight }}</p>
+    <div class="flex items-center gap-3 mn-card px-4 py-3">
+        <div class="w-8 h-8 bg-mn-accent rounded-lg flex items-center justify-center flex-shrink-0">
+            <span class="material-symbols-outlined icon-sm text-mn-dark">lightbulb</span>
+        </div>
+        <p class="text-sm text-mn-text dark:text-mn-text-dark">{{ insight }}</p>
     </div>
     {% endfor %}
 </div>
@@ -72,18 +132,22 @@
 <!-- Charts Grid -->
 <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-in stagger-2">
     <!-- Spending by Category (Horizontal Bar) -->
-    <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-3 flex items-center gap-2">
-            <span class="material-symbols-outlined icon-sm text-m3-primary dark:text-m3-primary-dark">bar_chart</span>
+    <div class="mn-card p-5">
+        <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 flex items-center gap-2">
+            <span class="w-7 h-7 bg-mn-accent rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-mn-dark" style="font-size:16px;">bar_chart</span>
+            </span>
             Spending by Category
         </h3>
         <canvas id="pieChart" height="220"></canvas>
     </div>
 
     <!-- Income vs Expense (Bar) -->
-    <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-3 flex items-center gap-2">
-            <span class="material-symbols-outlined icon-sm text-m3-primary dark:text-m3-primary-dark">bar_chart</span>
+    <div class="mn-card p-5">
+        <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 flex items-center gap-2">
+            <span class="w-7 h-7 bg-mn-accent rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-mn-dark" style="font-size:16px;">bar_chart</span>
+            </span>
             Income vs Expenses
         </h3>
         <canvas id="barChart" height="200"></canvas>
@@ -92,9 +156,11 @@
 
 <!-- Spending Trend (Line) -->
 <div class="mt-4 animate-fade-in stagger-3">
-    <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-5">
-        <h3 class="text-sm font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-3 flex items-center gap-2">
-            <span class="material-symbols-outlined icon-sm text-m3-primary dark:text-m3-primary-dark">show_chart</span>
+    <div class="mn-card p-5">
+        <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 flex items-center gap-2">
+            <span class="w-7 h-7 bg-mn-accent rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-mn-dark" style="font-size:16px;">show_chart</span>
+            </span>
             30-Day Spending Trend
         </h3>
         <canvas id="lineChart" height="160"></canvas>
@@ -104,28 +170,29 @@
 <!-- Recent Transactions -->
 <div class="mt-6 animate-fade-in stagger-4">
     <div class="flex items-center justify-between mb-3">
-        <h3 class="text-base font-bold text-m3-on-surface dark:text-m3-on-surface-dark">Recent Transactions</h3>
-        <a href="{% url 'transactions:list' %}" class="text-sm font-medium text-m3-primary dark:text-m3-primary-dark hover:underline">See All</a>
+        <h3 class="text-base font-bold text-mn-text dark:text-mn-text-dark">History Transaction</h3>
+        <a href="{% url 'transactions:list' %}" class="text-sm font-medium text-mn-muted dark:text-mn-muted-dark hover:text-mn-text transition-colors">see more</a>
     </div>
     <div class="space-y-2">
         {% for txn in recent_transactions %}
-        <a href="{% url 'transactions:update' txn.pk %}" class="flex items-center gap-3 bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4 hover:bg-m3-surface-container-high dark:hover:bg-m3-surface-container-high-dark transition-colors active:scale-[0.99]">
-            <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background-color: {{ txn.category.color }}20;">
-                <span class="material-symbols-outlined" style="color: {{ txn.category.color }}; font-size: 22px;">{{ txn.category.icon }}</span>
+        <a href="{% url 'transactions:update' txn.pk %}" class="flex items-center gap-3 mn-card p-4 hover:shadow-elevated transition-all active:scale-[0.99]">
+            <div class="w-11 h-11 bg-mn-accent rounded-xl flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-mn-dark" style="font-size: 22px;">{{ txn.category.icon }}</span>
             </div>
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark truncate">{{ txn.category.name }}</p>
-                <p class="text-xs text-m3-outline dark:text-m3-outline-dark">{{ txn.date|date:"M d, h:i A" }} · {{ txn.get_payment_method_display }}</p>
+                <p class="text-sm font-semibold text-mn-text dark:text-mn-text-dark truncate">{{ txn.category.name }}</p>
+                <p class="text-xs text-mn-muted dark:text-mn-muted-dark">{{ txn.date|date:"M d" }} · {{ txn.date|date:"h:i A" }}</p>
+                {% if txn.notes %}<p class="text-[11px] text-mn-muted/70 dark:text-mn-muted-dark/70 truncate mt-0.5">{{ txn.notes }}</p>{% endif %}
             </div>
-            <span class="text-sm font-bold {% if txn.type == 'income' %}text-income{% else %}text-expense{% endif %}">
+            <span class="text-sm font-bold {% if txn.type == 'income' %}text-[#A7C431]{% else %}text-mn-text dark:text-mn-text-dark{% endif %}">
                 {% if txn.type == 'income' %}+{% else %}-{% endif %}{{ txn.amount|currency:currency_symbol }}
             </span>
         </a>
         {% empty %}
         <div class="text-center py-10">
-            <span class="material-symbols-outlined text-m3-outline dark:text-m3-outline-dark" style="font-size:48px;">receipt_long</span>
-            <p class="text-sm text-m3-outline dark:text-m3-outline-dark mt-2">No transactions yet.</p>
-            <a href="{% url 'transactions:create' %}" class="inline-block mt-3 text-sm font-medium text-m3-primary dark:text-m3-primary-dark hover:underline">Add your first transaction →</a>
+            <span class="material-symbols-outlined text-mn-muted dark:text-mn-muted-dark" style="font-size:48px;">receipt_long</span>
+            <p class="text-sm text-mn-muted dark:text-mn-muted-dark mt-2">No transactions yet.</p>
+            <a href="{% url 'transactions:create' %}" class="inline-block mt-3 text-sm font-medium text-mn-accent-dark hover:underline">Add your first transaction →</a>
         </div>
         {% endfor %}
     </div>
@@ -133,25 +200,33 @@
 
 <!-- Quick Links -->
 <div class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 animate-fade-in stagger-4">
-    <a href="{% url 'transactions:budget_list' %}" class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4 hover:bg-m3-surface-container-high dark:hover:bg-m3-surface-container-high-dark transition-colors active:scale-[0.98]">
-        <span class="material-symbols-outlined text-m3-primary dark:text-m3-primary-dark icon-lg">savings</span>
-        <p class="text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mt-2">Budgets</p>
-        <p class="text-xs text-m3-outline dark:text-m3-outline-dark">Set spending limits</p>
+    <a href="{% url 'transactions:budget_list' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft">
+        <div class="w-10 h-10 bg-mn-accent rounded-xl flex items-center justify-center mb-2">
+            <span class="material-symbols-outlined text-mn-dark icon-md">savings</span>
+        </div>
+        <p class="text-sm font-semibold text-mn-accent">Budgets</p>
+        <p class="text-xs text-white/50 mt-0.5">Set spending limits</p>
     </a>
-    <a href="{% url 'transactions:savings_list' %}" class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4 hover:bg-m3-surface-container-high dark:hover:bg-m3-surface-container-high-dark transition-colors active:scale-[0.98]">
-        <span class="material-symbols-outlined text-m3-primary dark:text-m3-primary-dark icon-lg">flag</span>
-        <p class="text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mt-2">Savings</p>
-        <p class="text-xs text-m3-outline dark:text-m3-outline-dark">Track your goals</p>
+    <a href="{% url 'transactions:savings_list' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft">
+        <div class="w-10 h-10 bg-mn-accent rounded-xl flex items-center justify-center mb-2">
+            <span class="material-symbols-outlined text-mn-dark icon-md">flag</span>
+        </div>
+        <p class="text-sm font-semibold text-mn-accent">Savings</p>
+        <p class="text-xs text-white/50 mt-0.5">Track your goals</p>
     </a>
-    <a href="{% url 'transactions:category_list' %}" class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4 hover:bg-m3-surface-container-high dark:hover:bg-m3-surface-container-high-dark transition-colors active:scale-[0.98]">
-        <span class="material-symbols-outlined text-m3-primary dark:text-m3-primary-dark icon-lg">category</span>
-        <p class="text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mt-2">Categories</p>
-        <p class="text-xs text-m3-outline dark:text-m3-outline-dark">Organize spending</p>
+    <a href="{% url 'transactions:category_list' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft">
+        <div class="w-10 h-10 bg-mn-accent rounded-xl flex items-center justify-center mb-2">
+            <span class="material-symbols-outlined text-mn-dark icon-md">category</span>
+        </div>
+        <p class="text-sm font-semibold text-mn-accent">Categories</p>
+        <p class="text-xs text-white/50 mt-0.5">Organize spending</p>
     </a>
-    <a href="{% url 'reports:export_csv' %}" class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-4 hover:bg-m3-surface-container-high dark:hover:bg-m3-surface-container-high-dark transition-colors active:scale-[0.98]">
-        <span class="material-symbols-outlined text-m3-primary dark:text-m3-primary-dark icon-lg">download</span>
-        <p class="text-sm font-medium text-m3-on-surface dark:text-m3-on-surface-dark mt-2">Export</p>
-        <p class="text-xs text-m3-outline dark:text-m3-outline-dark">Download CSV</p>
+    <a href="{% url 'reports:export_csv' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft">
+        <div class="w-10 h-10 bg-mn-accent rounded-xl flex items-center justify-center mb-2">
+            <span class="material-symbols-outlined text-mn-dark icon-md">download</span>
+        </div>
+        <p class="text-sm font-semibold text-mn-accent">Export</p>
+        <p class="text-xs text-white/50 mt-0.5">Download CSV</p>
     </a>
 </div>
 {% endblock %}
@@ -159,10 +234,10 @@
 {% block extra_js %}
 <script>
     const isDark = document.documentElement.classList.contains('dark');
-    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-    const textColor = isDark ? '#8A969E' : '#6E7B84';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
+    const textColor = isDark ? '#6B6B6B' : '#9E9E9E';
 
-    Chart.defaults.font.family = "'Roboto', sans-serif";
+    Chart.defaults.font.family = "'Inter', sans-serif";
     Chart.defaults.font.size = 11;
     Chart.defaults.color = textColor;
 
@@ -179,7 +254,7 @@
                 datasets: [{
                     data: pieValues,
                     backgroundColor: pieColors,
-                    borderRadius: 6,
+                    borderRadius: 8,
                     barPercentage: 0.7,
                     categoryPercentage: 0.8,
                 }]
@@ -202,8 +277,8 @@
         data: {
             labels: {{ bar_labels|safe }},
             datasets: [
-                { label: 'Income', data: {{ bar_income|safe }}, backgroundColor: '#4DB6AC', borderRadius: 8, barPercentage: 0.6 },
-                { label: 'Expenses', data: {{ bar_expense|safe }}, backgroundColor: '#78909C', borderRadius: 8, barPercentage: 0.6 }
+                { label: 'Income', data: {{ bar_income|safe }}, backgroundColor: '#C8E64A', borderRadius: 8, barPercentage: 0.6 },
+                { label: 'Expenses', data: {{ bar_expense|safe }}, backgroundColor: '#1A1A1A', borderRadius: 8, barPercentage: 0.6 }
             ]
         },
         options: {
@@ -221,8 +296,8 @@
             datasets: [{
                 label: 'Daily Expenses',
                 data: {{ line_values|safe }},
-                borderColor: '#455A64',
-                backgroundColor: isDark ? 'rgba(176,190,197,0.1)' : 'rgba(69,90,100,0.1)',
+                borderColor: '#C8E64A',
+                backgroundColor: isDark ? 'rgba(200,230,74,0.1)' : 'rgba(200,230,74,0.15)',
                 fill: true, tension: 0.4, borderWidth: 2.5,
                 pointRadius: 0, pointHoverRadius: 5,
             }]

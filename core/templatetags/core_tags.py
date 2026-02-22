@@ -57,7 +57,7 @@ def active_nav(request, pattern, active_class=None, inactive_class=None):
         # Custom class mode: return active_class if match, else inactive_class
         return active_class if is_active else (inactive_class or "")
 
-    # Default M3 nav styling
+    # Default nav styling
     if is_active:
-        return "nav-item-active text-m3-on-primary-container dark:text-m3-on-primary-container-dark"
-    return "text-m3-on-surface dark:text-m3-on-surface-dark hover:bg-m3-surface-container-high dark:hover:bg-m3-surface-container-high-dark"
+        return "nav-item-active"
+    return "text-mn-muted dark:text-mn-muted-dark hover:bg-mn-bg dark:hover:bg-mn-bg-dark"

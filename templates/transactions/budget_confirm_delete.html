@@ -2,18 +2,27 @@
 
 {% block title %}Delete Budget{% endblock %}
 
+{% block top_bar %}
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3">
+    <a href="{% url 'transactions:budget_list' %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft">
+        <span class="material-symbols-outlined icon-md text-mn-text dark:text-mn-text-dark">arrow_back</span>
+    </a>
+    <h1 class="text-lg font-bold text-mn-text dark:text-mn-text-dark">Confirm Delete</h1>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="animate-fade-in max-w-md mx-auto mt-8">
-    <div class="bg-m3-surface-container dark:bg-m3-surface-container-dark rounded-2xl p-6 text-center">
-        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="material-symbols-outlined text-m3-error dark:text-m3-error-dark" style="font-size:32px;">delete</span>
+<div class="animate-fade-in max-w-md mx-auto mt-4">
+    <div class="mn-card p-6 text-center">
+        <div class="w-16 h-16 bg-expense-light rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-expense" style="font-size:32px;">delete</span>
         </div>
-        <h2 class="text-lg font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-2">Delete this budget?</h2>
-        <p class="text-sm text-m3-outline dark:text-m3-outline-dark mb-6">{{ object.category.name }} — {{ object.month|date:"M Y" }}</p>
+        <h2 class="text-lg font-bold text-mn-text dark:text-mn-text-dark mb-2">Delete this budget?</h2>
+        <p class="text-sm text-mn-muted dark:text-mn-muted-dark mb-6"><strong class="text-mn-text dark:text-mn-text-dark">{{ budget.category.name }}</strong> — {{ budget.month|date:"M Y" }}</p>
         <form method="post" class="flex gap-3">
             {% csrf_token %}
-            <a href="{% url 'transactions:budget_list' %}" class="flex-1 py-3 bg-m3-surface-container-highest dark:bg-m3-surface-container-highest-dark text-m3-on-surface dark:text-m3-on-surface-dark font-medium rounded-3xl text-center hover:opacity-90 transition-colors">Cancel</a>
-            <button type="submit" class="flex-1 py-3 bg-m3-error dark:bg-m3-error-dark text-m3-on-error dark:text-m3-on-error-dark font-medium rounded-3xl hover:opacity-90 transition-colors active:scale-[0.98]">Delete</button>
+            <a href="{% url 'transactions:budget_list' %}" class="flex-1 py-3 bg-mn-bg dark:bg-mn-bg-dark text-mn-text dark:text-mn-text-dark text-sm font-semibold rounded-2xl hover:opacity-80 transition-colors text-center">Cancel</a>
+            <button type="submit" class="flex-1 py-3 bg-expense text-white text-sm font-semibold rounded-2xl hover:bg-expense-dark transition-colors active:scale-[0.97]">Delete</button>
         </form>
     </div>
 </div>

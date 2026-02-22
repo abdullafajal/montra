@@ -4,24 +4,24 @@ from transactions.models import Category
 
 
 DEFAULT_CATEGORIES = [
-    {"name": "Food & Dining", "icon": "restaurant", "color": "#FFB74D"},       # Orange 300
-    {"name": "Transportation", "icon": "directions_car", "color": "#64B5F6"},  # Blue 300
-    {"name": "Housing", "icon": "home", "color": "#7986CB"},                   # Indigo 300
-    {"name": "Entertainment", "icon": "movie", "color": "#F06292"},            # Pink 300
-    {"name": "Shopping", "icon": "shopping_bag", "color": "#FF8A65"},          # Deep Orange 300
-    {"name": "Healthcare", "icon": "local_hospital", "color": "#E57373"},      # Red 300
-    {"name": "Education", "icon": "school", "color": "#4FC3F7"},              # Light Blue 300
-    {"name": "Salary", "icon": "payments", "color": "#81C784"},               # Green 300
-    {"name": "Freelance", "icon": "work", "color": "#4DB6AC"},                # Teal 300
-    {"name": "Investment", "icon": "trending_up", "color": "#AED581"},        # Light Green 300
-    {"name": "Gift", "icon": "redeem", "color": "#BA68C8"},                   # Purple 300
-    {"name": "Bills & Utilities", "icon": "receipt_long", "color": "#90A4AE"},# Blue Grey 300
-    {"name": "Travel", "icon": "flight", "color": "#4DD0E1"},                 # Cyan 300
-    {"name": "Clothing", "icon": "checkroom", "color": "#CE93D8"},            # Purple 200
-    {"name": "Fitness", "icon": "fitness_center", "color": "#DCE775"},        # Lime 300
-    {"name": "Coffee", "icon": "coffee", "color": "#A1887F"},                 # Brown 300
-    {"name": "Pets", "icon": "pets", "color": "#BCAAA4"},                     # Brown 200
-    {"name": "Other", "icon": "category", "color": "#78909C"},                # Blue Grey 400
+    {"name": "Food & Dining", "icon": "restaurant", "color": "#C8E64A"},
+    {"name": "Transportation", "icon": "directions_car", "color": "#C8E64A"},
+    {"name": "Housing", "icon": "home", "color": "#C8E64A"},
+    {"name": "Entertainment", "icon": "movie", "color": "#C8E64A"},
+    {"name": "Shopping", "icon": "shopping_bag", "color": "#C8E64A"},
+    {"name": "Healthcare", "icon": "local_hospital", "color": "#C8E64A"},
+    {"name": "Education", "icon": "school", "color": "#C8E64A"},
+    {"name": "Salary", "icon": "payments", "color": "#C8E64A"},
+    {"name": "Freelance", "icon": "work", "color": "#C8E64A"},
+    {"name": "Investment", "icon": "trending_up", "color": "#C8E64A"},
+    {"name": "Gift", "icon": "redeem", "color": "#C8E64A"},
+    {"name": "Bills & Utilities", "icon": "receipt_long", "color": "#C8E64A"},
+    {"name": "Travel", "icon": "flight", "color": "#C8E64A"},
+    {"name": "Clothing", "icon": "checkroom", "color": "#C8E64A"},
+    {"name": "Fitness", "icon": "fitness_center", "color": "#C8E64A"},
+    {"name": "Coffee", "icon": "coffee", "color": "#C8E64A"},
+    {"name": "Pets", "icon": "pets", "color": "#C8E64A"},
+    {"name": "Other", "icon": "category", "color": "#C8E64A"},
 ]
 
 

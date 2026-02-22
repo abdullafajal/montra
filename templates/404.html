@@ -1,27 +1,28 @@
-{% extends 'base.html' %}
-
-{% block title %}Page Not Found{% endblock %}
-
-{% block content %}
-<div class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-fade-in">
-    <div class="mb-6 text-m3-error dark:text-m3-error-dark">
-        <span class="material-symbols-outlined" style="font-size: 80px;">error</span>
+{% load pwa %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found — Montra</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/images/icons/icon-32x32.png">
+    {% progressive_web_app_meta %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+    <style>* { font-family: 'Inter', system-ui, sans-serif; }</style>
+</head>
+<body class="bg-[#F5F5F5] min-h-screen flex items-center justify-center px-4 antialiased">
+    <div class="text-center">
+        <div class="w-20 h-20 bg-[#FFEBEE] rounded-full flex items-center justify-center mx-auto mb-6">
+            <span class="material-symbols-outlined text-[#EF5350]" style="font-size:40px;">error</span>
+        </div>
+        <h1 class="text-6xl font-bold text-[#1A1A1A] mb-2">404</h1>
+        <p class="text-lg text-[#9E9E9E] mb-8">Page not found</p>
+        <a href="/" class="inline-flex items-center gap-2 px-6 py-3 bg-[#C8E64A] text-[#1A1A1A] font-semibold rounded-2xl hover:bg-[#B8D63A] transition-colors active:scale-[0.98] text-sm" style="box-shadow: 0 2px 12px rgba(200,230,74,0.3);">
+            <span class="material-symbols-outlined" style="font-size:18px;">home</span>
+            Go to Dashboard
+        </a>
     </div>
-    
-    <h1 class="text-4xl font-bold text-m3-on-surface dark:text-m3-on-surface-dark mb-4">404</h1>
-    
-    <h2 class="text-xl font-medium text-m3-on-surface-variant dark:text-m3-on-surface-variant-dark mb-6">
-        Oops! Page not found
-    </h2>
-    
-    <p class="text-m3-on-surface-variant dark:text-m3-on-surface-variant-dark max-w-sm mb-8 leading-relaxed">
-        The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
-    </p>
-
-    <a href="{% url 'transactions:dashboard' %}" 
-       class="inline-flex items-center justify-center px-6 py-3 rounded-full bg-m3-primary dark:bg-m3-primary-dark text-m3-on-primary dark:text-m3-on-primary-dark font-medium shadow-md transition-all hover:shadow-lg hover:opacity-95 active:scale-95">
-        <span class="material-symbols-outlined mr-2">home</span>
-        Back to Dashboard
-    </a>
-</div>
-{% endblock %}
+</body>
+</html>

@@ -16,7 +16,7 @@ class Category(models.Model):
 
     name = models.CharField(max_length=50)
     icon = models.CharField(max_length=30, default="category")
-    color = models.CharField(max_length=7, default="#6366f1")  # hex
+    color = models.CharField(max_length=7, default="#C8E64A")  # hex
     is_system = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
 
@@ -109,7 +109,7 @@ class SavingsGoal(models.Model):
     target_amount = models.DecimalField(max_digits=12, decimal_places=2)
     current_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     icon = models.CharField(max_length=30, choices=ICON_CHOICES, default="savings")
-    color = models.CharField(max_length=7, default="#26A69A")
+    color = models.CharField(max_length=7, default="#C8E64A")
     deadline = models.DateField(null=True, blank=True)
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
