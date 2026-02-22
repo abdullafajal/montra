@@ -3,73 +3,100 @@
 
 {% block title %}Dashboard{% endblock %}
 
-{% block top_bar %}
-<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
-    <div>
-        <p class="text-sm text-mn-muted dark:text-mn-muted-dark">Good {{ greeting }},</p>
-        <h1 class="text-xl font-bold text-mn-text dark:text-mn-text-dark">{{ request.user.get_full_name|default:request.user.username }}</h1>
+{% block content %}
+<!-- Cinematic Profile Hero Section -->
+<div id="profile-hero" class="relative -mx-4 -mt-4 min-h-[480px] flex flex-col items-center justify-end pb-12 transition-all duration-700 origin-top overflow-hidden lg:-mx-6 lg:-mt-6">
+    <!-- Background Image / Fallback -->
+    <div class="absolute inset-0 z-0">
+        {% if request.user.userprofile.avatar %}
+            <img src="{{ request.user.userprofile.avatar.url }}" alt="{{ request.user.username }}" class="w-full h-full object-cover">
+        {% else %}
+            <div class="w-full h-full bg-mn-dark flex items-center justify-center">
+                <span class="text-[120px] font-bold text-mn-accent opacity-20">{{ request.user.username|make_list|first|upper }}</span>
+            </div>
+        {% endif %}
+        <!-- Gradient Overlays for readability -->
+        <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-mn-bg dark:to-mn-bg-dark"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-mn-bg/80 dark:from-mn-bg-dark/80 via-transparent to-transparent"></div>
     </div>
-    <div class="flex items-center gap-3">
-        <a href="{% url 'accounts:profile' %}" class="user-avatar overflow-hidden">
-            {% if request.user.userprofile.avatar %}
-                <img src="{{ request.user.userprofile.avatar.url }}" alt="{{ request.user.username }}" class="w-full h-full object-cover">
-            {% else %}
-                {{ request.user.username|make_list|first|upper }}
-            {% endif %}
+
+    <!-- Floating Top Controls -->
+    <div class="absolute top-4 left-4 right-4 z-20 flex items-center justify-between">
+        <div class="px-5 py-2.5 rounded-full bg-mn-accent shadow-[0_4px_15px_rgba(0,0,0,0.3)] transition-all hover:scale-105 cursor-default">
+            <span class="text-sm font-bold text-mn-dark tracking-widest uppercase opacity-90">Montra</span>
+        </div>
+        <a href="{% url 'accounts:profile' %}" class="w-11 h-11 rounded-full bg-mn-accent flex items-center justify-center text-mn-dark shadow-[0_4px_15px_rgba(0,0,0,0.3)] transition-all active:scale-90 hover:scale-105 group">
+            <span class="material-symbols-outlined icon-sm group-hover:rotate-45 transition-transform duration-500">settings</span>
         </a>
     </div>
+
+    <!-- Hero Content (Refined Minimalist Layout) -->
+    <div class="relative z-10 text-center px-6 max-w-lg animate-fade-in">
+        <p class="text-sm text-mn-dark opacity-40 font-medium mb-1 drop-shadow-sm">Good {{ greeting }},</p>
+        <h1 class="text-4xl font-extrabold text-mn-dark tracking-tight leading-tight">
+            {{ request.user.get_full_name|default:request.user.username }}
+        </h1>
+        <!-- Subtle Animated Aura -->
+        <div class="absolute -inset-20 bg-mn-accent/10 blur-[100px] -z-10 rounded-full animate-pulse-soft"></div>
+    </div>
 </div>
-{% endblock %}
 
-{% block content %}
-<!-- Balance Card -->
-<div class="bg-mn-dark dark:bg-mn-card-dark rounded-3xl p-6 text-white animate-fade-in shadow-elevated overflow-hidden relative">
-    <!-- Subtle gradient overlay -->
-    <div class="absolute inset-0 opacity-[0.04]" style="background: radial-gradient(circle at top right, #C8E64A, transparent 60%);"></div>
-    <div class="relative z-10">
-        <div class="flex items-center justify-between mb-1">
-            <p class="text-sm font-medium opacity-60">Total Balance</p>
-            <span class="material-symbols-outlined icon-sm opacity-40">visibility</span>
-        </div>
-        <h2 class="text-4xl font-bold tracking-tight text-mn-accent">{{ total_balance|currency:currency_symbol }}</h2>
-
-        <!-- Monthly income/expense inline -->
-        <div class="flex items-center gap-4 mt-3">
-            <div class="flex items-center gap-1.5">
-                <span class="w-6 h-6 flex items-center justify-center rounded-full bg-income/20">
-                    <span class="material-symbols-outlined text-income" style="font-size:14px;">arrow_upward</span>
-                </span>
-                <span class="text-xs opacity-70">{{ monthly_income|currency:currency_symbol }}</span>
+<!-- Balance Main Card (Floating Overlapping) -->
+<div class="relative -mt-10 z-20 animate-fade-in stagger-1">
+    <div class="bg-mn-dark dark:bg-mn-card-dark rounded-3xl p-6 text-white shadow-elevated overflow-hidden relative border border-white/5">
+        <!-- Subtle gradient overlay -->
+        <div class="absolute inset-0 opacity-[0.04]" style="background: radial-gradient(circle at top right, #C8E64A, transparent 60%);"></div>
+        <div class="relative z-10">
+            <div class="flex items-center justify-between mb-1">
+                <p class="text-sm font-medium opacity-60">Total Balance</p>
+                <span class="material-symbols-outlined icon-sm opacity-40">visibility</span>
             </div>
-            <div class="flex items-center gap-1.5">
-                <span class="w-6 h-6 flex items-center justify-center rounded-full bg-expense/20">
-                    <span class="material-symbols-outlined text-expense" style="font-size:14px;">arrow_downward</span>
-                </span>
-                <span class="text-xs opacity-70">{{ monthly_expenses|currency:currency_symbol }}</span>
-            </div>
-        </div>
+            <h2 class="text-4xl font-bold tracking-tight text-mn-accent">{{ total_balance|currency:currency_symbol }}</h2>
 
-        <!-- Savings badge + Card account -->
-        <div class="flex items-center justify-between mt-4">
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full text-xs font-medium">
-                <span class="material-symbols-outlined" style="font-size:14px;">savings</span>
-                Saved {{ monthly_savings|currency:currency_symbol }} this month
+            <!-- Monthly income/expense inline -->
+            <div class="flex items-center gap-4 mt-3">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-6 h-6 flex items-center justify-center rounded-full bg-income/20">
+                        <span class="material-symbols-outlined text-income" style="font-size:14px;">arrow_upward</span>
+                    </span>
+                    <span class="text-xs opacity-70">{{ monthly_income|currency:currency_symbol }}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-6 h-6 flex items-center justify-center rounded-full bg-expense/20">
+                        <span class="material-symbols-outlined text-expense" style="font-size:14px;">arrow_downward</span>
+                    </span>
+                    <span class="text-xs opacity-70">{{ monthly_expenses|currency:currency_symbol }}</span>
+                </div>
             </div>
-        </div>
 
-        <!-- Action buttons -->
-        <div class="grid grid-cols-2 gap-3 mt-4">
-            <a href="{% url 'transactions:create' %}?type=income" class="flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/15 rounded-2xl transition-colors active:scale-[0.97]">
-                <span class="material-symbols-outlined icon-sm text-income">north_east</span>
-                <span class="text-sm font-semibold">Income</span>
-            </a>
-            <a href="{% url 'transactions:create' %}?type=expense" class="flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/15 rounded-2xl transition-colors active:scale-[0.97]">
-                <span class="material-symbols-outlined icon-sm text-expense">south_west</span>
-                <span class="text-sm font-semibold">Expense</span>
-            </a>
+            <!-- Savings badge + Card account -->
+            <div class="flex items-center justify-between mt-4">
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full text-xs font-medium">
+                    <span class="material-symbols-outlined" style="font-size:14px;">savings</span>
+                    Saved {{ monthly_savings|currency:currency_symbol }} this month
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                <a href="{% url 'transactions:create' %}?type=income" class="flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/15 rounded-2xl transition-colors active:scale-[0.97]">
+                    <span class="material-symbols-outlined icon-sm text-income">north_east</span>
+                    <span class="text-sm font-semibold">Income</span>
+                </a>
+                <a href="{% url 'transactions:create' %}?type=expense" class="flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/15 rounded-2xl transition-colors active:scale-[0.97]">
+                    <span class="material-symbols-outlined icon-sm text-expense">south_west</span>
+                    <span class="text-sm font-semibold">Expense</span>
+                </a>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+    .glass-pill {
+        @apply bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 transition-all hover:bg-white/20;
+    }
+</style>
 
 <!-- Income / Expense / Savings Summary -->
 <div class="grid grid-cols-3 gap-3 mt-4 animate-fade-in stagger-1">
@@ -312,5 +339,23 @@
             scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 7 } }, y: { grid: { color: gridColor }, border: { display: false } } }
         }
     });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stickyHeader = document.getElementById('sticky-header');
+    const hero = document.getElementById('profile-hero');
+    
+    window.addEventListener('scroll', () => {
+        const scrollPos = window.scrollY;
+        
+        // High Fidelity Hero Transitions
+        const alpha = Math.max(0, 1 - (scrollPos / 350));
+        const blur = Math.min(1, scrollPos / 60);
+        
+        hero.style.opacity = alpha;
+        hero.style.filter = `blur(${blur}px)`;
+    });
+});
 </script>
 {% endblock %}

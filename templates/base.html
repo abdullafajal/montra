@@ -54,7 +54,7 @@
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Dancing+Script:wght@400;700&family=Pacifico&family=Satisfy&family=Great+Vibes&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- Google Material Symbols -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
@@ -165,7 +165,35 @@
             height: 72px;
             font-size: 24px;
         }
-    </style>
+        @keyframes ken-burns {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.1); }
+    }
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+    @keyframes pulse-soft {
+        0%, 100% { opacity: 0.1; transform: scale(1); }
+        50% { opacity: 0.2; transform: scale(1.05); }
+    }
+    .animate-ken-burns { animation: ken-burns 20s ease-out infinite alternate; }
+    .animate-float { animation: float 3s ease-in-out infinite; }
+    .animate-pulse-soft { animation: pulse-soft 4s ease-in-out infinite; }
+    
+    .luxury-signature {
+        font-family: 'Great Vibes', cursive;
+        background: linear-gradient(135deg, #1A1A1A 0%, #444444 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+    }
+    .classical-serif {
+        font-family: 'Cinzel', serif;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+    }
+</style>
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-mn-bg dark:bg-mn-bg-dark text-mn-text dark:text-mn-text-dark min-h-screen antialiased">

@@ -39,6 +39,22 @@ def percentage(value, total):
 
 
 @register.filter
+def compact_number(value):
+    """Format a number with K, M, B suffixes."""
+    try:
+        val = float(value)
+        if abs(val) >= 1_000_000_000:
+            return f"{val / 1_000_000_000:.1f}B"
+        if abs(val) >= 1_000_000:
+            return f"{val / 1_000_000:.1f}M"
+        if abs(val) >= 1_000:
+            return f"{val / 1_000:.1f}K"
+        return f"{val:,.0f}"
+    except (ValueError, TypeError):
+        return value
+
+
+@register.filter
 def abs_value(value):
     """Return absolute value."""
     try:
