@@ -3,9 +3,11 @@ from django import forms
 from django.db.models import Q
 from .models import Transaction, Category, Budget, SavingsGoal
 
-tw = "w-full px-4 py-3 rounded-xl border border-m3-outline-variant dark:border-m3-outline-variant-dark bg-m3-surface-container-high dark:bg-m3-surface-container-high-dark text-m3-on-surface dark:text-m3-on-surface-dark focus:ring-2 focus:ring-m3-primary dark:focus:ring-m3-primary-dark focus:border-transparent outline-none transition-all duration-200"
-tw_select = tw
-tw_date = tw + " date-input"
+tw = "w-full px-4 py-3 rounded-xl border border-mn-border dark:border-mn-border-dark bg-mn-card dark:bg-mn-card-dark text-mn-text dark:text-mn-text-dark focus:ring-2 focus:ring-mn-accent focus:border-transparent outline-none transition-all duration-200"
+tw_select = tw + " !pr-10 appearance-none bg-no-repeat bg-[right_12px_center] bg-[length:16px]"
+# Use a custom chevron for selects to avoid browser overlap
+tw_select += " bg-[image:url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path fill=\"%239E9E9E\" d=\"m7 10 5 5 5-5z\"/></svg>')]"
+tw_date = tw + " !pr-10 date-input"
 tw_textarea = tw + " resize-none"
 
 

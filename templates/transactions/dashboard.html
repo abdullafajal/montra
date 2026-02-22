@@ -10,8 +10,12 @@
         <h1 class="text-xl font-bold text-mn-text dark:text-mn-text-dark">{{ request.user.get_full_name|default:request.user.username }}</h1>
     </div>
     <div class="flex items-center gap-3">
-        <a href="{% url 'accounts:profile' %}" class="user-avatar">
-            {{ request.user.username|make_list|first|upper }}
+        <a href="{% url 'accounts:profile' %}" class="user-avatar overflow-hidden">
+            {% if request.user.userprofile.avatar %}
+                <img src="{{ request.user.userprofile.avatar.url }}" alt="{{ request.user.username }}" class="w-full h-full object-cover">
+            {% else %}
+                {{ request.user.username|make_list|first|upper }}
+            {% endif %}
         </a>
     </div>
 </div>

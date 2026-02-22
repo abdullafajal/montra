@@ -46,10 +46,11 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ["currency", "theme"]
+        fields = ["currency", "theme", "avatar"]
         widgets = {
             "currency": forms.Select(attrs={"class": tw}),
             "theme": forms.Select(attrs={"class": tw}),
+            "avatar": forms.FileInput(attrs={"class": tw}),
         }
 
     def __init__(self, *args, **kwargs):

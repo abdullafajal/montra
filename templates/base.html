@@ -212,7 +212,13 @@
         <!-- Bottom section -->
         <div class="px-3 pb-4 space-y-1">
             <a href="{% url 'accounts:profile' %}" class="flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium transition-all duration-200 {% active_nav request '^/accounts/profile' %}" id="sidenav-profile">
-                <div class="user-avatar" style="width:28px;height:28px;font-size:11px;">{{ request.user.username|make_list|first|upper }}</div>
+                <div class="user-avatar overflow-hidden" style="width:28px;height:28px;font-size:11px;">
+                    {% if request.user.userprofile.avatar %}
+                        <img src="{{ request.user.userprofile.avatar.url }}" alt="{{ request.user.username }}" class="w-full h-full object-cover">
+                    {% else %}
+                        {{ request.user.username|make_list|first|upper }}
+                    {% endif %}
+                </div>
                 <span>{{ request.user.get_full_name|default:request.user.username }}</span>
             </a>
             <a href="{% url 'accounts:logout' %}" class="flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium text-expense hover:bg-expense-light dark:hover:bg-red-900/20 transition-colors">

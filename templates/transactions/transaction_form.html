@@ -62,7 +62,7 @@
             </div>
         </div>
 
-        <button type="submit" class="w-full py-3.5 bg-mn-accent text-mn-dark font-semibold rounded-2xl transition-all duration-200 active:scale-[0.98] shadow-soft hover:opacity-90">
+        <button type="submit" class="w-full py-3.5 bg-mn-dark text-mn-accent font-semibold rounded-2xl transition-all duration-200 active:scale-[0.98] shadow-soft hover:opacity-90">
             {% if object %}Update{% else %}Add{% endif %} {% if request.GET.type == 'income' %}Income{% elif request.GET.type == 'expense' %}Expense{% else %}Transaction{% endif %}
         </button>
     </form>

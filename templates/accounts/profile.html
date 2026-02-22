@@ -16,15 +16,25 @@
 <div class="animate-fade-in max-w-lg mx-auto space-y-4">
     <!-- Avatar Card -->
     <div class="mn-card p-6 flex flex-col items-center">
-        <div class="user-avatar user-avatar-lg">
-            {{ request.user.username|make_list|first|upper }}
+        <div class="relative group cursor-pointer" onclick="document.getElementById('id_avatar').click();">
+            <div class="user-avatar user-avatar-lg overflow-hidden border-2 border-transparent group-hover:border-mn-accent transition-all">
+                {% if request.user.userprofile.avatar %}
+                    <img src="{{ request.user.userprofile.avatar.url }}" alt="{{ request.user.username }}" class="w-full h-full object-cover">
+                {% else %}
+                    {{ request.user.username|make_list|first|upper }}
+                {% endif %}
+            </div>
+            <!-- Edit Overlay -->
+            <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span class="material-symbols-outlined text-white icon-sm">photo_camera</span>
+            </div>
         </div>
         <h2 class="text-lg font-bold text-mn-text dark:text-mn-text-dark mt-3">{{ request.user.get_full_name|default:request.user.username }}</h2>
         <p class="text-sm text-mn-muted dark:text-mn-muted-dark">{{ request.user.email }}</p>
     </div>
 
     <!-- Personal Info -->
-    <form method="post" class="space-y-4">
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
         {% csrf_token %}
         {% if form.errors %}
         <div class="flex items-center gap-2 bg-expense-light text-expense-dark text-sm rounded-2xl px-4 py-3 shadow-soft">
@@ -39,6 +49,7 @@
                 Personal Info
             </h3>
             <div class="space-y-4">
+                <div class="hidden">{{ form.avatar }}</div>
                 <div><label class="block text-sm font-medium text-mn-text dark:text-mn-text-dark mb-1.5">First Name</label>{{ form.first_name }}</div>
                 <div><label class="block text-sm font-medium text-mn-text dark:text-mn-text-dark mb-1.5">Last Name</label>{{ form.last_name }}</div>
                 <div><label class="block text-sm font-medium text-mn-text dark:text-mn-text-dark mb-1.5">Email</label>{{ form.email }}</div>
@@ -57,7 +68,7 @@
             </div>
         </div>
 
-        <button type="submit" class="w-full py-3.5 bg-mn-dark dark:bg-mn-accent text-white dark:text-mn-dark font-semibold rounded-2xl hover:opacity-90 transition-all duration-200 active:scale-[0.98] shadow-soft">
+        <button type="submit" class="w-full py-3.5 bg-mn-dark text-mn-accent font-semibold rounded-2xl hover:opacity-90 transition-all duration-200 active:scale-[0.98] shadow-soft">
             Save Changes
         </button>
     </form>
@@ -70,4 +81,23 @@
         </a>
     </div>
 </div>
+
+<script>
+document.getElementById('id_avatar').onchange = function(evt) {
+    const [file] = this.files;
+    if (file) {
+        // Find the img tag inside the avatar container
+        const container = document.querySelector('.user-avatar-lg');
+        let img = container.querySelector('img');
+        
+        // If it was initials, create an img tag
+        if (!img) {
+            container.innerHTML = '<img src="" class="w-full h-full object-cover">';
+            img = container.querySelector('img');
+        }
+        
+        img.src = URL.createObjectURL(file);
+    }
+};
+</script>
 {% endblock %}

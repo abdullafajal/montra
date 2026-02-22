@@ -66,7 +66,7 @@ class ProfileView(LoginRequiredMixin, View):
 
     def post(self, request):
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
-        form = ProfileForm(request.POST, instance=profile, user=request.user)
+        form = ProfileForm(request.POST, request.FILES, instance=profile, user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, "Profile updated successfully.")
