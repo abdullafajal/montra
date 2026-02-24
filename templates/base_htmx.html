@@ -1,0 +1,33 @@
+<title>{% block title %}Montra{% endblock %} — Montra</title>
+{% block top_bar %}{% endblock %}
+
+{% if messages %}
+<div id="flash-messages" class="px-4 pt-2 space-y-2 lg:px-6">
+    {% for message in messages %}
+    <div class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium animate-fade-in shadow-soft
+        {% if message.tags == 'success' %}bg-mn-dark text-mn-accent
+        {% elif message.tags == 'error' %}bg-mn-dark text-red-400
+        {% elif message.tags == 'warning' %}bg-mn-dark text-amber-400
+        {% else %}bg-mn-dark text-white{% endif %}">
+        {% if message.tags == 'success' %}
+        <span class="material-symbols-outlined icon-sm">check_circle</span>
+        {% elif message.tags == 'error' %}
+        <span class="material-symbols-outlined icon-sm">error</span>
+        {% elif message.tags == 'warning' %}
+        <span class="material-symbols-outlined icon-sm">warning</span>
+        {% else %}
+        <span class="material-symbols-outlined icon-sm">info</span>
+        {% endif %}
+        <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<main class="{% block main_class %}px-4 py-4 lg:px-6{% endblock %}">
+    {% block content %}{% endblock %}
+</main>
+
+{% block modals %}{% endblock %}
+{% block htmx_js %}{% endblock htmx_js %}
+{% block extra_js %}{% endblock %}

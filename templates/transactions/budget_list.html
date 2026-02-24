@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends request.META.HTTP_HX_REQUEST|yesno:"base_htmx.html,base.html" %}
 {% load core_tags %}
 
 {% block title %}Budgets{% endblock %}

@@ -1,5 +1,6 @@
 {% load core_tags %}
 {% load pwa %}
+
 <!DOCTYPE html>
 <html lang="en" class="{% if theme == 'dark' %}dark{% endif %}">
 <head>
@@ -61,6 +62,9 @@
 
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <!-- HTMX CDN -->
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
 
     <style>
         * { font-family: 'Inter', system-ui, sans-serif; }
@@ -235,9 +239,46 @@
         @apply bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-2 transition-all hover:bg-white/20;
     }
 </style>
+    <style>
+        /* Progress Bar for HTMX */
+        .htmx-indicator {
+            opacity: 0;
+            transition: opacity 100ms ease-in;
+        }
+        .htmx-request .htmx-indicator {
+            opacity: 1;
+        }
+        .htmx-request.htmx-indicator {
+            opacity: 1;
+        }
+        #nprogress {
+            pointer-events: none;
+        }
+        #nprogress .bar {
+            background: #C8E64A;
+            position: fixed;
+            z-index: 1031;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+        }
+    </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-mn-bg dark:bg-mn-bg-dark text-mn-text dark:text-mn-text-dark min-h-screen antialiased">
+<body class="bg-mn-bg dark:bg-mn-bg-dark text-mn-text dark:text-mn-text-dark min-h-screen antialiased" hx-boost="true" hx-target="#htmx-content" hx-swap="innerHTML show:window:top" hx-indicator="#global-progress">
+    
+    <!-- Top Progress Bar -->
+    <div id="global-progress" class="htmx-indicator" style="position:fixed;top:0;left:0;width:100%;z-index:9999;">
+        <div style="height:3px;background:#C8E64A;width:100%;animation:progress 1.5s infinite linear;transform-origin:left;will-change:transform;"></div>
+    </div>
+    <style>
+        @keyframes progress {
+            0% { transform: scaleX(0); opacity: 1; }
+            50% { transform: scaleX(0.5); opacity: 1; }
+            100% { transform: scaleX(1); opacity: 0; }
+        }
+    </style>
 
     {% if request.user.is_authenticated %}
     <!-- ===== DESKTOP SIDEBAR (lg+) ===== -->
@@ -300,7 +341,7 @@
 
     <!-- ===== MAIN CONTENT ===== -->
     <div class="{% if request.user.is_authenticated %}lg:ml-64{% endif %} min-h-screen pb-24 lg:pb-6">
-        <div class="max-w-2xl mx-auto lg:max-w-5xl">
+        <div id="htmx-content" class="max-w-2xl mx-auto lg:max-w-5xl transition-opacity duration-200">
 
             {% block top_bar %}{% endblock %}
 
@@ -332,6 +373,7 @@
             <main class="{% block main_class %}px-4 py-4 lg:px-6{% endblock %}">
                 {% block content %}{% endblock %}
             </main>
+            {% block modals %}{% endblock %}
         </div>
 
         <!-- ===== TYPE SELECTOR ===== -->
@@ -375,8 +417,6 @@
         </div>
         {% endif %}
 
-        {% block modals %}{% endblock %}
-
         <!-- ===== FLOATING MOBILE BOTTOM NAV (< lg) ===== -->
         {% if request.user.is_authenticated %}
 
@@ -405,21 +445,25 @@
 
     <!-- Scripts -->
     <script>
+    (function() {
+        if (window._baseJsInit) return;
+        window._baseJsInit = true;
+
         // Auto-hide flash messages
         setTimeout(() => {
             const el = document.getElementById('flash-messages');
             if (el) el.style.display = 'none';
         }, 4000);
 
-        function toggleDarkMode() {
+        window.toggleDarkMode = function() {
             document.documentElement.classList.toggle('dark');
         }
 
         // Bottom Nav Hide/Show on Scroll
         let lastScrollTop = 0;
-        const bottomNav = document.getElementById('bottom-nav');
         
         window.addEventListener('scroll', function() {
+            const bottomNav = document.getElementById('bottom-nav');
             let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             if (bottomNav) {
                 if (scrollTop > lastScrollTop && scrollTop > 80) {
@@ -432,6 +476,78 @@
             }
             lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
         }, { passive: true });
+
+        // Update active nav links on HTMX swap
+        document.body.addEventListener('htmx:afterSettle', function(evt) {
+            updateNavActiveStates(window.location.pathname);
+            
+            // Re-apply fade-out to flash messages loaded via HTMX
+            setTimeout(() => {
+                const el = document.getElementById('flash-messages');
+                if (el) el.style.display = 'none';
+            }, 4000);
+        });
+
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            const main = document.querySelector('main');
+            if (main) main.style.opacity = '0.6';
+        });
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            const main = document.querySelector('main');
+            if (main) main.style.opacity = '1';
+        });
+
+        function updateNavActiveStates(currentPath) {
+            // Function to handle active state for nav items
+            const activeClassesList = 'bg-mn-accent text-mn-dark'.split(' ');
+            const inactiveClassesList = 'text-gray-400 hover:text-gray-300'.split(' ');
+            const sidenavActiveClassList = 'nav-item-active'.split(' ');
+
+            // Paths mapping to an array of element IDs
+            const routeMap = {
+                '^/$': ['sidenav-home', 'nav-dashboard'],
+                '^/transactions/categories': ['sidenav-categories'],
+                '^/transactions/budgets': ['sidenav-budgets', 'nav-budgets'],
+                '^/transactions/savings': ['sidenav-savings', 'nav-savings'],
+                '^/transactions': ['sidenav-history', 'nav-transactions'],
+                '^/reports': ['sidenav-reports', 'nav-reports'],
+                '^/accounts/profile': ['sidenav-profile']
+            };
+
+            // First remove active state from all
+            document.querySelectorAll('nav a').forEach(el => {
+                if (el.id.startsWith('sidenav-')) {
+                    el.classList.remove(...sidenavActiveClassList);
+                } else if (el.id.startsWith('nav-')) {
+                    el.classList.remove(...activeClassesList);
+                    el.classList.add(...inactiveClassesList);
+                }
+            });
+
+            // Then apply active to matching path
+            for (const [pattern, ids] of Object.entries(routeMap)) {
+                if (new RegExp(pattern).test(currentPath) && 
+                    !(pattern === '^/transactions' && currentPath.includes('/categories')) &&
+                    !(pattern === '^/transactions' && currentPath.includes('/budgets')) &&
+                    !(pattern === '^/transactions' && currentPath.includes('/savings'))
+                ) {
+                    ids.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            if (id.startsWith('sidenav-')) {
+                                el.classList.add(...sidenavActiveClassList);
+                            } else {
+                                el.classList.remove(...inactiveClassesList);
+                                el.classList.add(...activeClassesList);
+                            }
+                        }
+                    });
+                    // Only match most specific route
+                    break;
+                }
+            }
+        }
+    })();
     </script>
     {% block extra_js %}{% endblock %}
 </body>

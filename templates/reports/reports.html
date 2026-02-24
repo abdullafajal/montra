@@ -1,5 +1,6 @@
-{% extends "base.html" %}
+{% extends request.META.HTTP_HX_REQUEST|yesno:"base_htmx.html,base.html" %}
 {% load core_tags %}
+{% load cache %}
 
 {% block title %}Reports{% endblock %}
 
@@ -23,6 +24,7 @@
 {% endblock %}
 
 {% block content %}
+{% cache 3600 reports request.user.id selected_year %}
 <div class="animate-fade-in">
     <!-- Annual Summary -->
     <div class="grid grid-cols-3 gap-3 mb-6">
@@ -163,6 +165,7 @@
         </button>
     </div>
 </div>
+{% endcache %}
 {% endblock %}
 
 {% block modals %}
@@ -220,98 +223,100 @@
 
 {% block extra_js %}
 <script>
-    const isDark = document.documentElement.classList.contains('dark');
-    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-    const textColor = isDark ? '#6B6B6B' : '#9E9E9E';
+    (function() {
+        const isDark = document.documentElement.classList.contains('dark');
+        const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
+        const textColor = isDark ? '#6B6B6B' : '#9E9E9E';
 
-    Chart.defaults.font.family = "'Inter', sans-serif";
-    Chart.defaults.font.size = 11;
-    Chart.defaults.color = textColor;
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.font.size = 11;
+        Chart.defaults.color = textColor;
 
-    // Monthly Bar Chart
-    new Chart(document.getElementById('monthlyChart'), {
-        type: 'bar',
-        data: {
-            labels: {{ monthly_labels|safe }},
-            datasets: [
-                { label: 'Income', data: {{ monthly_income_data|safe }}, backgroundColor: '#C8E64A', borderRadius: 8, barPercentage: 0.6 },
-                { label: 'Expenses', data: {{ monthly_expense_data|safe }}, backgroundColor: '#1A1A1A', borderRadius: 8, barPercentage: 0.6 }
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle' } } },
-            scales: { x: { grid: { display: false } }, y: { grid: { color: gridColor }, border: { display: false } } }
-        }
-    });
-
-    // Category Horizontal Bar
-    const catLabels = {{ cat_labels|safe }};
-    const catValues = {{ cat_values|safe }};
-    const catColors = {{ cat_colors|safe }};
-    if (catLabels.length > 0) {
-        new Chart(document.getElementById('categoryChart'), {
+        // Monthly Bar Chart
+        new Chart(document.getElementById('monthlyChart'), {
             type: 'bar',
             data: {
-                labels: catLabels,
+                labels: {{ monthly_labels|safe }},
+                datasets: [
+                    { label: 'Income', data: {{ monthly_income_data|safe }}, backgroundColor: '#C8E64A', borderRadius: 8, barPercentage: 0.6 },
+                    { label: 'Expenses', data: {{ monthly_expense_data|safe }}, backgroundColor: '#1A1A1A', borderRadius: 8, barPercentage: 0.6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle' } } },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: gridColor }, border: { display: false } } }
+            }
+        });
+
+        // Category Horizontal Bar
+        const catLabels = {{ cat_labels|safe }};
+        const catValues = {{ cat_values|safe }};
+        const catColors = {{ cat_colors|safe }};
+        if (catLabels.length > 0) {
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'bar',
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        data: catValues,
+                        backgroundColor: catColors,
+                        borderRadius: 6,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: gridColor }, border: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { grid: { display: false }, ticks: { font: { size: 11, weight: '500' } } }
+                    }
+                }
+            });
+        }
+
+        // Savings Trend Line
+        new Chart(document.getElementById('savingsChart'), {
+            type: 'line',
+            data: {
+                labels: {{ monthly_labels|safe }},
                 datasets: [{
-                    data: catValues,
-                    backgroundColor: catColors,
-                    borderRadius: 6,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8,
+                    label: 'Net Savings',
+                    data: {{ savings_data|safe }},
+                    borderColor: '#C8E64A',
+                    backgroundColor: isDark ? 'rgba(200,230,74,0.1)' : 'rgba(200,230,74,0.15)',
+                    fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 5,
+                    pointBackgroundColor: '#C8E64A',
                 }]
             },
             options: {
-                indexAxis: 'y',
                 responsive: true,
                 plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { color: gridColor }, border: { display: false }, ticks: { font: { size: 10 } } },
-                    y: { grid: { display: false }, ticks: { font: { size: 11, weight: '500' } } }
-                }
+                scales: { x: { grid: { display: false } }, y: { grid: { color: gridColor }, border: { display: false } } }
             }
         });
-    }
 
-    // Savings Trend Line
-    new Chart(document.getElementById('savingsChart'), {
-        type: 'line',
-        data: {
-            labels: {{ monthly_labels|safe }},
-            datasets: [{
-                label: 'Net Savings',
-                data: {{ savings_data|safe }},
-                borderColor: '#C8E64A',
-                backgroundColor: isDark ? 'rgba(200,230,74,0.1)' : 'rgba(200,230,74,0.15)',
-                fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 5,
-                pointBackgroundColor: '#C8E64A',
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { x: { grid: { display: false } }, y: { grid: { color: gridColor }, border: { display: false } } }
-        }
-    });
+        // --- Export Bottom Sheet ---
+        let exportFormat = 'csv';
+        const csvUrl = '{% url "reports:export_csv" %}';
+        const pdfUrl = '{% url "reports:export_pdf" %}';
 
-    // --- Export Bottom Sheet ---
-    let exportFormat = 'csv';
-    const csvUrl = '{% url "reports:export_csv" %}';
-    const pdfUrl = '{% url "reports:export_pdf" %}';
+        window.openExportSheet = function(format) {
+            exportFormat = format;
+            const title = format === 'pdf' ? 'Export PDF Report' : 'Export CSV Data';
+            document.getElementById('exportSheetTitle').textContent = title;
+            document.getElementById('exportSheet').classList.remove('hidden');
+        };
 
-    function openExportSheet(format) {
-        exportFormat = format;
-        const title = format === 'pdf' ? 'Export PDF Report' : 'Export CSV Data';
-        document.getElementById('exportSheetTitle').textContent = title;
-        document.getElementById('exportSheet').classList.remove('hidden');
-    }
-
-    function doExport(period) {
-        const base = exportFormat === 'pdf' ? pdfUrl : csvUrl;
-        window.location.href = base + '?period=' + period;
-        document.getElementById('exportSheet').classList.add('hidden');
-    }
+        window.doExport = function(period) {
+            const base = exportFormat === 'pdf' ? pdfUrl : csvUrl;
+            window.location.href = base + '?period=' + period;
+            document.getElementById('exportSheet').classList.add('hidden');
+        };
+    })();
 
 </script>
 {% endblock %}

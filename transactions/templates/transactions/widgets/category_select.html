@@ -61,118 +61,154 @@
 </div>
 
 <script>
-    // Initialize
-    document.addEventListener("DOMContentLoaded", function() {
+    (function() {
         const name = '{{ widget.name }}';
-        const select = document.getElementById('{{ widget.attrs.id }}');
         
-        // Initial setup if value exists
-        if (select.value) {
-            const catId = select.value;
-            const options = document.querySelectorAll(`#list-${name} > div`);
-            options.forEach(opt => {
-                const clickAttr = opt.getAttribute('onclick');
-                if (clickAttr && clickAttr.includes(`, '${catId}',`)) {
-                    // Extract data from the onclick attribute to set display without actual click
-                    const regex = /selectCustomOption\('.+?', '(.+?)', '(.+?)', '(.+?)', '(.+?)'\)/;
-                    const match = clickAttr.match(regex);
-                    if (match) {
-                        const [_, id, label, icon, color] = match;
-                        // Manual update to avoid side effects of .click()
-                        const display = document.getElementById(`display-${name}`);
-                        display.innerHTML = `
-                            <div class="w-6 h-6 rounded flex items-center justify-center shrink-0 bg-mn-accent">
-                                <span class="material-symbols-outlined text-mn-dark" style="font-size: 16px;">${icon}</span>
-                            </div>
-                            <span class="text-sm font-medium text-mn-text dark:text-mn-text-dark truncate">${label}</span>
-                        `;
-                        const check = document.querySelector(`#options-${name} .check-${id}`);
-                        if(check) {
-                            check.classList.remove('opacity-0');
-                            check.classList.add('opacity-100');
+        // Setup initial display
+        document.addEventListener("DOMContentLoaded", function() {
+            initCustomSelect(name);
+        });
+        
+        // HTMX re-init hook
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            initCustomSelect(name);
+        });
+
+        function initCustomSelect(widgetName) {
+            const select = document.getElementById('{{ widget.attrs.id }}');
+            if (!select) return;
+            
+            if (select.value) {
+                const catId = select.value;
+                const options = document.querySelectorAll(`#list-${widgetName} > div`);
+                options.forEach(opt => {
+                    const clickAttr = opt.getAttribute('onclick');
+                    if (clickAttr && clickAttr.includes(`, '${catId}',`)) {
+                        const regex = /selectCustomOption\('.+?', '(.+?)', '(.+?)', '(.+?)', '(.+?)'\)/;
+                        const match = clickAttr.match(regex);
+                        if (match) {
+                            const [_, id, label, icon, color] = match;
+                            const display = document.getElementById(`display-${widgetName}`);
+                            if (display) {
+                                display.innerHTML = `
+                                    <div class="w-6 h-6 rounded flex items-center justify-center shrink-0 bg-mn-accent">
+                                        <span class="material-symbols-outlined text-mn-dark" style="font-size: 16px;">${icon}</span>
+                                    </div>
+                                    <span class="text-sm font-medium text-mn-text dark:text-mn-text-dark truncate">${label}</span>
+                                `;
+                            }
+                            const check = document.querySelector(`#options-${widgetName} .check-${id}`);
+                            if(check) {
+                                check.classList.remove('opacity-0');
+                                check.classList.add('opacity-100');
+                            }
                         }
+                    }
+                });
+            }
+        }
+
+        // Only attach the document click listener once globally
+        if (!window._customSelectClickAttached) {
+            document.addEventListener('click', function(e) {
+                document.querySelectorAll('.custom-select-container').forEach(container => {
+                    if (!container.contains(e.target)) {
+                        const optionsDiv = container.querySelector('[id^="options-"]');
+                        if (optionsDiv) {
+                            optionsDiv.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+            window._customSelectClickAttached = true;
+        }
+
+        window.toggleCustomSelect = function(dropdownName) {
+            const options = document.getElementById(`options-${dropdownName}`);
+            if (!options) return;
+            
+            const isHidden = options.classList.contains('hidden');
+            
+            // Hide all other dropdowns first
+            document.querySelectorAll('.custom-select-container [id^="options-"]').forEach(opt => {
+                if (opt.id !== `options-${dropdownName}`) opt.classList.add('hidden');
+            });
+
+            options.classList.toggle('hidden');
+            
+            if (isHidden) {
+                const searchInput = document.getElementById(`search-${dropdownName}`);
+                if (searchInput) {
+                    searchInput.value = '';
+                    window.filterCategories(dropdownName);
+                }
+            }
+        }
+
+        window.filterCategories = function(dropdownName) {
+            const searchInput = document.getElementById(`search-${dropdownName}`);
+            if (!searchInput) return;
+            
+            const query = searchInput.value.toLowerCase();
+            const options = document.querySelectorAll(`#list-${dropdownName} > div`);
+            const noResults = document.getElementById(`no-results-${dropdownName}`);
+            let hasVisible = false;
+
+            options.forEach(opt => {
+                const labelElement = opt.querySelector('span:not(.material-symbols-outlined)');
+                if (labelElement) {
+                    const label = labelElement.textContent.toLowerCase();
+                    if (label.includes(query)) {
+                        opt.style.display = 'flex';
+                        hasVisible = true;
+                    } else {
+                        opt.style.display = 'none';
                     }
                 }
             });
-        }
-        
-        // Close on click outside
-        document.addEventListener('click', function(e) {
-            const container = document.getElementById(`container-${name}`);
-            if (!container.contains(e.target)) {
-                document.getElementById(`options-${name}`).classList.add('hidden');
+
+            if (noResults) {
+                noResults.classList.toggle('hidden', hasVisible);
             }
-        });
-    });
-
-    function toggleCustomSelect(name) {
-        const options = document.getElementById(`options-${name}`);
-        const isHidden = options.classList.contains('hidden');
-        
-        // Hide all other dropdowns first if multiple exist
-        document.querySelectorAll('.custom-select-container [id^="options-"]').forEach(opt => {
-            if (opt.id !== `options-${name}`) opt.classList.add('hidden');
-        });
-
-        options.classList.toggle('hidden');
-        
-        if (isHidden) {
-            const searchInput = document.getElementById(`search-${name}`);
-            searchInput.value = '';
-            filterCategories(name);
         }
-    }
 
-    function filterCategories(name) {
-        const query = document.getElementById(`search-${name}`).value.toLowerCase();
-        const options = document.querySelectorAll(`#list-${name} > div`);
-        const noResults = document.getElementById(`no-results-${name}`);
-        let hasVisible = false;
-
-        options.forEach(opt => {
-            const label = opt.querySelector('span:not(.material-symbols-outlined)').textContent.toLowerCase();
-            if (label.includes(query)) {
-                opt.style.display = 'flex';
-                hasVisible = true;
-            } else {
-                opt.style.display = 'none';
+        window.selectCustomOption = function(dropdownName, value, label, icon, color) {
+            const select = document.querySelector(`select[name="${dropdownName}"]`);
+            if (!select) return;
+            
+            select.value = value;
+            select.dispatchEvent(new Event('change'));
+            
+            const display = document.getElementById(`display-${dropdownName}`);
+            if (display) {
+                display.innerHTML = `
+                    <div class="w-6 h-6 rounded flex items-center justify-center shrink-0 bg-mn-accent">
+                        <span class="material-symbols-outlined text-mn-dark" style="font-size: 16px;">${icon}</span>
+                    </div>
+                    <span class="text-sm font-medium text-mn-text dark:text-mn-text-dark truncate">${label}</span>
+                `;
             }
-        });
-
-        noResults.classList.toggle('hidden', hasVisible);
-    }
-
-    function selectCustomOption(name, value, label, icon, color) {
-        const select = document.querySelector(`select[name="${name}"]`);
-        select.value = value;
-        select.dispatchEvent(new Event('change')); // Notify Django form
-        
-        // Update UI
-        const display = document.getElementById(`display-${name}`);
-        display.innerHTML = `
-            <div class="w-6 h-6 rounded flex items-center justify-center shrink-0 bg-mn-accent">
-                <span class="material-symbols-outlined text-mn-dark" style="font-size: 16px;">${icon}</span>
-            </div>
-            <span class="text-sm font-medium text-mn-text dark:text-mn-text-dark truncate">${label}</span>
-        `;
-        
-        // Hide dropdown
-        document.getElementById(`options-${name}`).classList.add('hidden');
-        
-        // Update checkmarks
-        document.querySelectorAll(`#options-${name} .opacity-100`).forEach(el => el.classList.remove('opacity-100'));
-        document.querySelectorAll(`#options-${name} .opacity-100`).forEach(el => el.classList.add('opacity-0'));
-        
-        const check = document.querySelector(`#options-${name} .check-${value}`);
-        if(check) {
-            check.classList.remove('opacity-0');
-            check.classList.add('opacity-100');
+            
+            const optionsDiv = document.getElementById(`options-${dropdownName}`);
+            if (optionsDiv) {
+                optionsDiv.classList.add('hidden');
+                
+                // Update checkmarks
+                optionsDiv.querySelectorAll('.opacity-100').forEach(el => {
+                    el.classList.remove('opacity-100');
+                    el.classList.add('opacity-0');
+                });
+                
+                const check = optionsDiv.querySelector(`.check-${value}`);
+                if(check) {
+                    check.classList.remove('opacity-0');
+                    check.classList.add('opacity-100');
+                }
+            }
         }
-    }
-    
-    function updateCustomSelectDisplay(name, value) {
-         // Logic to find option data by value if we didn't click it
-         // This is a backup for initial load. 
-         // For now, the loop in DOMContentLoaded suffices implicitly if we iterate choices.
-    }
+        
+        window.updateCustomSelectDisplay = function(dropdownName, value) {
+            // Placeholder for programmatic updates
+        }
+    })();
 </script>

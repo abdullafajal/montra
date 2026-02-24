@@ -10,6 +10,7 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.utils import timezone
 from django.views.generic import TemplateView, View
+from django.core.cache import cache
 
 from transactions.models import Transaction, Category
 
@@ -17,11 +18,19 @@ from transactions.models import Transaction, Category
 class ReportsView(LoginRequiredMixin, TemplateView):
     template_name = "reports/reports.html"
 
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        today = timezone.now().date()
+        year = int(request.GET.get("year", today.year))
+        
+        context = self.get_context_data(year=year, **kwargs)
+        return self.render_to_response(context)
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         user = self.request.user
         today = timezone.now().date()
-        year = int(self.request.GET.get("year", today.year))
+        year = kwargs.get("year", today.year)
 
         # Monthly summary for the year
         monthly_data = []
@@ -145,16 +154,16 @@ class ExportCSVView(LoginRequiredMixin, View):
 
 
 class ExportPDFView(LoginRequiredMixin, View):
-    # Project theme colors (slate / blue-gray)
-    PRIMARY = "#37474F"
-    PRIMARY_LIGHT = "#546E7A"
-    ACCENT = "#4DB6AC"
-    SURFACE = "#ECEFF1"
-    BORDER = "#B0BEC5"
-    TEXT_DARK = "#263238"
-    TEXT_MUTED = "#78909C"
-    INCOME_COLOR = "#4DB6AC"
-    EXPENSE_COLOR = "#EF5350"
+    # Project theme colors (Montra Bold Light)
+    BG_COLOR = "#FFFFFF"       # Main page background
+    SURFACE = "#F4F4F5"        # Card / Table background
+    PRIMARY = "#0F0F0F"        # App Black
+    BORDER = "#E4E4E7"         # Borders / dividers
+    TEXT_DARK = "#18181B"      # Main dark text
+    TEXT_MUTED = "#71717A"     # Muted text
+    INCOME_COLOR = "#C8E64A"   # App Green
+    EXPENSE_COLOR = "#EF4444"  # Modern Red
+    ACCENT = "#C8E64A"         # App Green
 
     def get(self, request):
         from reportlab.lib import colors
@@ -165,55 +174,75 @@ class ExportPDFView(LoginRequiredMixin, View):
             SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable,
         )
 
+        from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from django.conf import settings
+        import os
+
+        try:
+            font_dir = os.path.join(settings.BASE_DIR, "static", "fonts")
+            pdfmetrics.registerFont(TTFont("NotoSans", os.path.join(font_dir, "NotoSans-Regular.ttf")))
+            pdfmetrics.registerFont(TTFont("NotoSans-Bold", os.path.join(font_dir, "NotoSans-Bold.ttf")))
+            FONT_REGULAR = "NotoSans"
+            FONT_BOLD = "NotoSans-Bold"
+        except Exception:
+            FONT_REGULAR = "Helvetica"
+            FONT_BOLD = "Helvetica-Bold"
+
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
             buffer, pagesize=A4,
-            topMargin=0.6 * inch, bottomMargin=0.5 * inch,
-            leftMargin=0.6 * inch, rightMargin=0.6 * inch,
+            topMargin=1.0 * inch, bottomMargin=1.0 * inch,
+            leftMargin=0.8 * inch, rightMargin=0.8 * inch,
         )
         styles = getSampleStyleSheet()
         elements = []
 
-        # Custom styles
+        # Custom styles for smaller, cleaner look
         title_style = ParagraphStyle(
             "MontraTitle", parent=styles["Title"],
-            fontSize=22, textColor=colors.HexColor(self.PRIMARY),
-            spaceAfter=4,
+            fontSize=24, textColor=colors.HexColor(self.PRIMARY),
+            fontName=FONT_BOLD,
+            spaceAfter=6,
+            alignment=TA_LEFT,
         )
         subtitle_style = ParagraphStyle(
             "MontraSubtitle", parent=styles["Normal"],
-            fontSize=10, textColor=colors.HexColor(self.TEXT_MUTED),
+            fontSize=10, textColor=colors.HexColor("#A1A1AA"),
+            fontName=FONT_REGULAR,
+            spaceAfter=2,
+            alignment=TA_LEFT,
         )
         heading_style = ParagraphStyle(
             "MontraHeading", parent=styles["Heading2"],
-            fontSize=13, textColor=colors.HexColor(self.PRIMARY),
-            spaceBefore=16, spaceAfter=8,
+            fontSize=13, textColor=colors.HexColor(self.TEXT_DARK),
+            fontName=FONT_BOLD,
+            spaceBefore=20, spaceAfter=8,
         )
-        stat_label = ParagraphStyle(
-            "StatLabel", parent=styles["Normal"],
-            fontSize=9, textColor=colors.HexColor(self.TEXT_MUTED),
-        )
-        stat_value = ParagraphStyle(
-            "StatValue", parent=styles["Normal"],
-            fontSize=14, textColor=colors.HexColor(self.TEXT_DARK),
-            fontName="Helvetica-Bold",
+        normal_style = ParagraphStyle(
+            "NormalDark", parent=styles["Normal"],
+            textColor=colors.HexColor(self.TEXT_DARK),
+            fontName=FONT_REGULAR,
+            fontSize=10,
+            spaceAfter=2,
         )
 
         # --- Header ---
         user = request.user
         today = timezone.now().date()
-        elements.append(Paragraph("Montra", title_style))
+        elements.append(Paragraph("Montra.", title_style))
         elements.append(Paragraph("Financial Report", subtitle_style))
-        elements.append(Spacer(1, 0.1 * inch))
+        elements.append(Spacer(1, 0.15 * inch))
         elements.append(HRFlowable(
-            width="100%", thickness=1.5,
-            color=colors.HexColor(self.BORDER), spaceAfter=12,
+            width="100%", thickness=2,
+            color=colors.HexColor(self.PRIMARY), spaceAfter=12,
         ))
 
         name = user.get_full_name() or user.username
-        elements.append(Paragraph(f"Prepared for <b>{name}</b>", styles["Normal"]))
+        elements.append(Paragraph(f"Prepared for: <b>{name}</b>", normal_style))
         elements.append(Paragraph(
-            f"Generated on {today.strftime('%B %d, %Y')}",
+            f"Generated on: {today.strftime('%B %d, %Y')}",
             subtitle_style,
         ))
         elements.append(Spacer(1, 0.25 * inch))
@@ -223,35 +252,45 @@ class ExportPDFView(LoginRequiredMixin, View):
         txns = Transaction.objects.filter(user=user).select_related("category")
         txns, period_label = _filter_by_period(txns, period, today)
 
+        # Get User's Currency Symbol
+        sym = "$"
+        if hasattr(user, 'userprofile'):
+            sym = user.userprofile.get_currency_symbol()
+
         income = txns.filter(type="income").aggregate(t=Sum("amount"))["t"] or 0
         expense = txns.filter(type="expense").aggregate(t=Sum("amount"))["t"] or 0
         savings = income - expense
 
         elements.append(Paragraph(f"Summary — {period_label}", heading_style))
 
+        savings_color = self.INCOME_COLOR if savings >= 0 else self.EXPENSE_COLOR
+
         summary_data = [
             ["Income", "Expenses", "Net Savings"],
-            [f"${income:,.2f}", f"${expense:,.2f}", f"${savings:,.2f}"],
+            [f"{sym}{income:,.2f}", f"{sym}{expense:,.2f}", f"{sym}{savings:,.2f}"],
         ]
-        summary_table = Table(summary_data, colWidths=[2.2 * inch] * 3)
+        
+        # 3 columns, spanning 6.67 inches total
+        col_w = 2.22 * inch 
+        summary_table = Table(summary_data, colWidths=[col_w] * 3)
         summary_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(self.SURFACE)),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor(self.TEXT_MUTED)),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica"),
-            ("FONTSIZE", (0, 0), (-1, 0), 9),
-            ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 1), (-1, 1), 14),
-            ("TEXTCOLOR", (0, 1), (0, 1), colors.HexColor(self.INCOME_COLOR)),
-            ("TEXTCOLOR", (1, 1), (1, 1), colors.HexColor(self.EXPENSE_COLOR)),
-            ("TEXTCOLOR", (2, 1), (2, 1), colors.HexColor(self.PRIMARY)),
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(self.PRIMARY)), 
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#D4D4D8")),
+            ("FONTNAME", (0, 0), (-1, 0), FONT_BOLD),
+            ("FONTSIZE", (0, 0), (-1, 0), 10),
+            ("FONTNAME", (0, 1), (-1, 1), FONT_BOLD),
+            ("FONTSIZE", (0, 1), (-1, 1), 16),
+            ("TEXTCOLOR", (0, 1), (0, 1), colors.HexColor(self.INCOME_COLOR)), 
+            ("TEXTCOLOR", (1, 1), (1, 1), colors.HexColor(self.EXPENSE_COLOR)), 
+            ("TEXTCOLOR", (2, 1), (2, 1), colors.HexColor(savings_color)),                        
             ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-            ("ROUNDEDCORNERS", [4, 4, 4, 4]),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(self.BORDER)),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 12),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 14),
+            ("ROUNDEDCORNERS", [6, 6, 6, 6]),
         ]))
         elements.append(summary_table)
-        elements.append(Spacer(1, 0.2 * inch))
+        elements.append(Spacer(1, 0.3 * inch))
 
         # --- Transactions table ---
         elements.append(Paragraph(f"Transactions — {period_label}", heading_style))
@@ -262,54 +301,68 @@ class ExportPDFView(LoginRequiredMixin, View):
                 t.date.strftime("%I:%M %p"),
                 t.type.title(),
                 str(t.category) if t.category else "—",
-                f"${t.amount:,.2f}",
+                f"{sym}{t.amount:,.2f}",
                 t.get_payment_method_display(),
             ])
 
-        col_widths = [1 * inch, 0.7 * inch, 0.7 * inch, 1.4 * inch, 0.9 * inch, 1 * inch]
+        # Optimize column widths to fit ~6.67 inches
+        col_widths = [1.05 * inch, 0.8 * inch, 0.8 * inch, 1.62 * inch, 1.0 * inch, 1.4 * inch]
         table = Table(data, colWidths=col_widths)
         table.setStyle(TableStyle([
             # Header row
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(self.PRIMARY)),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 9),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor(self.ACCENT)),
+            ("FONTNAME", (0, 0), (-1, 0), FONT_BOLD),
+            ("FONTSIZE", (0, 0), (-1, 0), 9.5),
             ("TOPPADDING", (0, 0), (-1, 0), 8),
             ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+            
+            # Alignments 
+            ("ALIGN", (0, 0), (3, -1), "LEFT"),
+            ("ALIGN", (4, 0), (4, -1), "RIGHT"),
+            ("ALIGN", (5, 0), (5, -1), "LEFT"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+
             # Body rows
-            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-            ("FONTSIZE", (0, 1), (-1, -1), 8.5),
+            ("TEXTCOLOR", (0, 1), (-1, -1), colors.HexColor(self.TEXT_DARK)),
+            ("FONTNAME", (0, 1), (-1, -1), FONT_REGULAR),
+            ("FONTSIZE", (0, 1), (-1, -1), 9),
             ("TOPPADDING", (0, 1), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 1), (-1, -1), 6),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            # Alternating rows
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [
-                colors.white, colors.HexColor(self.SURFACE),
-            ]),
+            ("BOTTOMPADDING", (0, 1), (-1, -1), 8),
+            
+            # Backgrounds
+            ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor(self.BG_COLOR)),
+            
             # Grid
-            ("GRID", (0, 0), (-1, 0), 0, colors.HexColor(self.PRIMARY)),
-            ("LINEBELOW", (0, 0), (-1, -2), 0.5, colors.HexColor("#CFD8DC")),
-            ("LINEBELOW", (0, -1), (-1, -1), 1, colors.HexColor(self.BORDER)),
+            ("LINEBELOW", (0, 0), (-1, -2), 0.5, colors.HexColor(self.BORDER)),
+            ("LINEBELOW", (0, -1), (-1, -1), 1.5, colors.HexColor(self.PRIMARY)),
         ]))
         elements.append(table)
 
         # --- Footer ---
         elements.append(Spacer(1, 0.4 * inch))
         elements.append(HRFlowable(
-            width="100%", thickness=0.5,
-            color=colors.HexColor(self.BORDER), spaceAfter=6,
+            width="100%", thickness=1.0,
+            color=colors.HexColor(self.BORDER), spaceAfter=8,
         ))
         footer_style = ParagraphStyle(
             "Footer", parent=styles["Normal"],
-            fontSize=8, textColor=colors.HexColor(self.TEXT_MUTED),
-            alignment=1,  # center
+            fontSize=9, textColor=colors.HexColor(self.TEXT_MUTED),
+            alignment=TA_CENTER,
         )
         elements.append(Paragraph(
             f"Montra Financial Tracker · Generated {today.strftime('%b %d, %Y')}",
             footer_style,
         ))
 
-        doc.build(elements)
+        def draw_bg(canvas, doc):
+            canvas.saveState()
+            canvas.setFillColor(colors.HexColor(self.BG_COLOR))
+            # Draw a rectangle filling the entire A4 canvas
+            canvas.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
+            canvas.restoreState()
+
+        doc.build(elements, onFirstPage=draw_bg, onLaterPages=draw_bg)
         buffer.seek(0)
 
         response = HttpResponse(buffer, content_type="application/pdf")
