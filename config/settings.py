@@ -83,7 +83,7 @@ DATABASES = {
 # ---------------------------------------------------------------------------
 # Caching
 # ---------------------------------------------------------------------------
-ENABLE_CACHING = os.environ.get("ENABLE_CACHING", "False").lower() in ("true", "1", "yes")
+ENABLE_CACHING = os.environ.get("ENABLE_CACHING", "True").lower() in ("true", "1", "yes")
 
 if ENABLE_CACHING:
     CACHES = {
