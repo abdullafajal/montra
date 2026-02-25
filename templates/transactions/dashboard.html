@@ -140,7 +140,7 @@
 {% endif %}
 
 <!-- Balance Main Card (Floating Overlapping) -->
-<div class="relative {% if request.user.userprofile.show_hero_image %}-mt-10{% else %}mt-2{% endif %} z-20 animate-fade-in stagger-1">
+<div class="relative {% if request.user.userprofile.show_hero_image %}-mt-10{% else %}mt-2{% endif %} z-20">
     <div class="bg-mn-dark dark:bg-mn-card-dark rounded-3xl p-6 text-white shadow-elevated overflow-hidden relative border border-white/5">
         <!-- Subtle gradient overlay -->
         <div class="absolute inset-0 opacity-[0.04]" style="background: radial-gradient(circle at top right, #C8E64A, transparent 60%);"></div>
@@ -199,7 +199,7 @@
 </style>
 
 <!-- Income / Expense / Savings Summary -->
-<div class="grid grid-cols-3 gap-3 mt-4 animate-fade-in stagger-1">
+<div class="grid grid-cols-3 gap-3 mt-4">
     <div class="mn-card p-4 text-center">
         <div class="w-9 h-9 bg-mn-accent rounded-xl flex items-center justify-center mx-auto mb-2">
             <span class="material-symbols-outlined icon-sm text-mn-dark">arrow_upward</span>
@@ -224,7 +224,7 @@
 </div>
 
 <!-- Promo Banner -->
-<div class="mt-4 bg-mn-accent rounded-2xl p-5 flex items-center gap-4 animate-fade-in stagger-1">
+<div class="mt-4 bg-mn-accent rounded-2xl p-5 flex items-center gap-4">
     <div class="flex-1">
         <p class="text-sm font-bold text-mn-dark">Start tracking money tax free</p>
         <p class="text-xs text-mn-dark/70 mt-1">The best place for tracking expenses and income. Start saving now!</p>
@@ -236,7 +236,7 @@
 
 <!-- Budget Warnings -->
 {% if budget_warnings %}
-<div class="mt-4 space-y-2 animate-fade-in stagger-1">
+<div class="mt-4 space-y-2">
     {% for b in budget_warnings %}
     <div class="flex items-center gap-3 px-4 py-3 bg-mn-dark rounded-2xl shadow-soft">
         <span class="material-symbols-outlined icon-sm text-mn-accent">warning</span>
@@ -248,7 +248,7 @@
 
 <!-- Insights -->
 {% if insights %}
-<div class="mt-4 space-y-2 animate-fade-in stagger-1">
+<div class="mt-4 space-y-2">
     {% for insight in insights %}
     <div class="flex items-center gap-3 mn-card px-4 py-3">
         <div class="w-8 h-8 bg-mn-accent rounded-lg flex items-center justify-center flex-shrink-0">
@@ -261,7 +261,7 @@
 {% endif %}
 
 <!-- Charts Grid -->
-<div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-in stagger-2">
+<div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
     <!-- Spending by Category (Horizontal Bar) -->
     <div class="mn-card p-5">
         <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 flex items-center gap-2">
@@ -286,7 +286,7 @@
 </div>
 
 <!-- Spending Trend (Line) -->
-<div class="mt-4 animate-fade-in stagger-3">
+<div class="mt-4">
     <div class="mn-card p-5">
         <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 flex items-center gap-2">
             <span class="w-7 h-7 bg-mn-accent rounded-lg flex items-center justify-center">
@@ -299,7 +299,7 @@
 </div>
 
 <!-- Recent Transactions -->
-<div class="mt-6 animate-fade-in stagger-4">
+<div class="mt-6">
     <div class="flex items-center justify-between mb-3">
         <h3 class="text-base font-bold text-mn-text dark:text-mn-text-dark">History Transaction</h3>
         <a href="{% url 'transactions:list' %}" class="text-sm font-medium text-mn-muted dark:text-mn-muted-dark hover:text-mn-text transition-colors">see more</a>

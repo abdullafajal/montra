@@ -57,6 +57,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Dancing+Script:wght@400;700&family=Pacifico&family=Satisfy&family=Great+Vibes&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 
+    <!-- AOS for Smooth Scroll Animations -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
     <!-- Google Material Symbols -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
 
@@ -437,19 +441,63 @@
             lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
         }, { passive: true });
 
-        // Global Skeleton Loader Handling
+        // Global Skeleton Loader Handling with AOS
         document.addEventListener('DOMContentLoaded', () => {
-            // Apply a slight delay to mimic SPA loading perfectly
             setTimeout(() => {
                 const skeletons = document.querySelectorAll('[data-skeleton]');
                 const contents = document.querySelectorAll('[data-content]');
                 
+                // Hide skeletons instantly
                 skeletons.forEach(s => s.classList.add('hidden'));
+                
+                // Show contents
                 contents.forEach(c => {
                     c.classList.remove('hidden');
-                    c.classList.add('animate-fade-in');
+                    
+                    // Forcefully clear old CSS animations from ALL children 
+                    // that might conflict with AOS managing opacity
+                    c.classList.remove('animate-fade-in'); 
+                    const nestedAnimatedItems = c.querySelectorAll('.animate-fade-in');
+                    nestedAnimatedItems.forEach(item => {
+                        item.classList.remove('animate-fade-in');
+                    });
                 });
-            }, 300); // 300ms transition delay
+
+                // Dynamically add AOS attributes so templates don't have to be cluttered
+                // Expanded selector to catch almost every structural element for "all places" coverage
+                const scrollItems = document.querySelectorAll(
+                    '[data-content] > *, [data-content] form, .mn-card, .scroll-reveal, [data-content] .grid > div, [data-content] .space-y-2 > *, [data-content] .space-y-3 > *, [data-content] .space-y-4 > *, [data-content] table tr, [data-content] ul li'
+                );
+                
+                scrollItems.forEach((item, index) => {
+                    // Ignore scripts, styles, and empty invisible divs
+                    if (!item.hasAttribute('data-aos') && !['SCRIPT','STYLE'].includes(item.tagName)) {
+                        // Use a softer fade-up
+                        item.setAttribute('data-aos', 'fade-up');
+                        
+                        // Apply a gentle stagger for items near the top (initial load)
+                        if (index < 30) {
+                            // Reduced stagger gap for more fluidity
+                            item.setAttribute('data-aos-delay', (index * 25).toString());
+                        }
+                    }
+                });
+
+                // Initialize AOS after DOM adjustments are locked in
+                if (typeof AOS !== 'undefined') {
+                    AOS.init({
+                        once: true, // only animate once
+                        offset: 10, // trigger animation immediately on small scrolls
+                        duration: 700, // perfect balance of speed and smoothness
+                        easing: 'ease-out', // incredibly natural deceleration curve
+                    });
+                    
+                    // Force AOS to recalculate offsets after the 300ms skeleton swap is fully painted
+                    setTimeout(() => {
+                        AOS.refresh();
+                    }, 50);
+                }
+            }, 300); // Maintain the intentional perceived 300ms loading pause
         });
 
     })();
