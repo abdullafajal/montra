@@ -1,4 +1,4 @@
-{% extends request.META.HTTP_HX_REQUEST|yesno:"base_htmx.html,base.html" %}
+{% extends 'base.html' %}
 {% load core_tags %}
 {% load cache %}
 
@@ -6,6 +6,80 @@
 
 {% block content %}
 
+<!-- SKELETON LOADER -->
+<div data-skeleton class="animate-pulse">
+    {% if request.user.userprofile.show_hero_image %}
+    <!-- Hero Skeleton -->
+    <div class="-mx-4 -mt-4 min-h-[480px] bg-mn-card dark:bg-mn-card-dark lg:-mx-6 lg:-mt-6 relative flex flex-col justify-end pb-12">
+        <div class="absolute top-4 left-4 right-4 flex justify-between">
+            <div class="w-24 h-10 bg-mn-border dark:bg-mn-border-dark rounded-full"></div>
+            <div class="w-11 h-11 bg-mn-border dark:bg-mn-border-dark rounded-full"></div>
+        </div>
+        <div class="px-6 mx-auto w-full max-w-lg mb-8 text-center flex flex-col items-center">
+            <div class="w-40 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-3"></div>
+            <div class="w-56 h-10 bg-mn-border dark:bg-mn-border-dark rounded-xl"></div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Minimal Header Skeleton -->
+    <div class="pt-8 pb-6 flex items-center justify-between">
+        <div>
+            <div class="w-24 h-3 bg-mn-card dark:bg-mn-card-dark rounded mb-2"></div>
+            <div class="w-48 h-8 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+        </div>
+        <div class="w-12 h-12 bg-mn-card dark:bg-mn-card-dark rounded-2xl"></div>
+    </div>
+    {% endif %}
+
+    <!-- Balance Card Skeleton -->
+    <div class="relative {% if request.user.userprofile.show_hero_image %}-mt-10{% else %}mt-2{% endif %} z-20">
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-3xl p-6 border border-mn-border dark:border-mn-border-dark">
+            <div class="w-24 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-4"></div>
+            <div class="w-48 h-10 bg-mn-border dark:bg-mn-border-dark rounded mb-6"></div>
+            <div class="flex gap-4 mb-6">
+                <div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-mn-border dark:bg-mn-border-dark"></div><div class="w-16 h-4 rounded bg-mn-border dark:bg-mn-border-dark"></div></div>
+                <div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-mn-border dark:bg-mn-border-dark"></div><div class="w-16 h-4 rounded bg-mn-border dark:bg-mn-border-dark"></div></div>
+            </div>
+            <div class="w-full h-8 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Skeleton -->
+    <div class="mt-6">
+        <div class="w-32 h-5 bg-mn-card dark:bg-mn-card-dark rounded mb-4"></div>
+        <div class="grid grid-cols-4 gap-4">
+            <div class="flex flex-col items-center gap-2"><div class="w-14 h-14 bg-mn-card dark:bg-mn-card-dark rounded-2xl"></div></div>
+            <div class="flex flex-col items-center gap-2"><div class="w-14 h-14 bg-mn-card dark:bg-mn-card-dark rounded-2xl"></div></div>
+            <div class="flex flex-col items-center gap-2"><div class="w-14 h-14 bg-mn-card dark:bg-mn-card-dark rounded-2xl"></div></div>
+            <div class="flex flex-col items-center gap-2"><div class="w-14 h-14 bg-mn-card dark:bg-mn-card-dark rounded-2xl"></div></div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions Skeleton -->
+    <div class="mt-8">
+        <div class="flex justify-between items-center mb-4">
+            <div class="w-32 h-5 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+            <div class="w-16 h-4 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+        </div>
+        <div class="space-y-3">
+            <div class="flex items-center justify-between p-4 bg-mn-card dark:bg-mn-card-dark rounded-3xl border border-mn-border dark:border-mn-border-dark">
+                <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-2xl bg-mn-border dark:bg-mn-border-dark"></div><div><div class="w-24 h-4 rounded bg-mn-border dark:bg-mn-border-dark mb-2"></div><div class="w-16 h-3 rounded bg-mn-border dark:bg-mn-border-dark"></div></div></div>
+                <div class="w-16 h-5 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-mn-card dark:bg-mn-card-dark rounded-3xl border border-mn-border dark:border-mn-border-dark">
+                <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-2xl bg-mn-border dark:bg-mn-border-dark"></div><div><div class="w-24 h-4 rounded bg-mn-border dark:bg-mn-border-dark mb-2"></div><div class="w-16 h-3 rounded bg-mn-border dark:bg-mn-border-dark"></div></div></div>
+                <div class="w-16 h-5 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-mn-card dark:bg-mn-card-dark rounded-3xl border border-mn-border dark:border-mn-border-dark">
+                <div class="flex items-center gap-4"><div class="w-12 h-12 rounded-2xl bg-mn-border dark:bg-mn-border-dark"></div><div><div class="w-24 h-4 rounded bg-mn-border dark:bg-mn-border-dark mb-2"></div><div class="w-16 h-3 rounded bg-mn-border dark:bg-mn-border-dark"></div></div></div>
+                <div class="w-16 h-5 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTUAL CONTENT -->
+<div data-content class="hidden">
 {% cache 1800 dashboard request.user.id %}
 {% if request.user.userprofile.show_hero_image %}
 <!-- Cinematic Profile Hero Section -->
@@ -383,4 +457,5 @@
         }
     })();
 </script>
+</div>
 {% endblock %}

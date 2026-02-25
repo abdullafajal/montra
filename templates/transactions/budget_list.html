@@ -1,9 +1,20 @@
-{% extends request.META.HTTP_HX_REQUEST|yesno:"base_htmx.html,base.html" %}
+{% extends 'base.html' %}
 {% load core_tags %}
 
 {% block title %}Budgets{% endblock %}
 
 {% block top_bar %}
+<!-- SKELETON TOP BAR -->
+<div data-skeleton class="animate-pulse px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark lg:hidden"></div>
+        <div class="w-24 h-7 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+    </div>
+    <div class="w-10 h-10 lg:w-32 lg:h-10 rounded-xl lg:rounded-2xl bg-mn-card dark:bg-mn-card-dark"></div>
+</div>
+
+<!-- ACTUAL TOP BAR -->
+<div data-content class="hidden">
 <div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
     <div class="flex items-center gap-3">
         <a href="{% url 'transactions:dashboard' %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all lg:hidden">
@@ -16,9 +27,100 @@
         <span class="hidden lg:inline text-sm font-semibold text-mn-dark">Add Budget</span>
     </a>
 </div>
+</div>
 {% endblock %}
 
 {% block content %}
+
+<!-- SKELETON LOADER -->
+<div data-skeleton class="animate-pulse grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <!-- Card 1 -->
+    <div class="bg-mn-card dark:bg-mn-card-dark rounded-2xl p-5 border border-mn-border dark:border-mn-border-dark">
+        <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark"></div>
+                <div>
+                    <div class="w-24 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+                    <div class="w-16 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                </div>
+            </div>
+            <div class="flex gap-1">
+                <div class="w-8 h-8 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+                <div class="w-8 h-8 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+        </div>
+        <div>
+            <div class="flex justify-between mb-2">
+                <div class="w-20 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-8 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="w-full h-2.5 rounded-full bg-mn-border dark:bg-mn-border-dark mb-2"></div>
+            <div class="flex justify-between mt-2">
+                <div class="w-8 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-16 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card 2 -->
+    <div class="bg-mn-card dark:bg-mn-card-dark rounded-2xl p-5 border border-mn-border dark:border-mn-border-dark">
+        <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark"></div>
+                <div>
+                    <div class="w-32 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+                    <div class="w-16 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                </div>
+            </div>
+            <div class="flex gap-1">
+                <div class="w-8 h-8 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+                <div class="w-8 h-8 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+        </div>
+        <div>
+            <div class="flex justify-between mb-2">
+                <div class="w-24 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-8 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="w-full h-2.5 rounded-full bg-mn-border dark:bg-mn-border-dark mb-2"></div>
+            <div class="flex justify-between mt-2">
+                <div class="w-8 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-12 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card 3 -->
+    <div class="bg-mn-card dark:bg-mn-card-dark rounded-2xl p-5 border border-mn-border dark:border-mn-border-dark">
+        <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark"></div>
+                <div>
+                    <div class="w-20 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+                    <div class="w-16 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                </div>
+            </div>
+            <div class="flex gap-1">
+                <div class="w-8 h-8 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+                <div class="w-8 h-8 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+        </div>
+        <div>
+            <div class="flex justify-between mb-2">
+                <div class="w-16 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-8 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="w-full h-2.5 rounded-full bg-mn-border dark:bg-mn-border-dark mb-2"></div>
+            <div class="flex justify-between mt-2">
+                <div class="w-8 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-20 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTUAL CONTENT -->
+<div data-content class="hidden">
 <div class="animate-fade-in grid grid-cols-1 lg:grid-cols-2 gap-3">
     {% for budget in budgets %}
     {% with pct=budget.get_percentage spent=budget.get_spent %}
@@ -76,5 +178,6 @@
         </a>
     </div>
     {% endfor %}
+</div>
 </div>
 {% endblock %}

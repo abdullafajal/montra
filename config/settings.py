@@ -83,13 +83,22 @@ DATABASES = {
 # ---------------------------------------------------------------------------
 # Caching
 # ---------------------------------------------------------------------------
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-        "LOCATION": "montra_cache_table",
-        "TIMEOUT": 1800,  # 30 minutes default
+ENABLE_CACHING = os.environ.get("ENABLE_CACHING", "False").lower() in ("true", "1", "yes")
+
+if ENABLE_CACHING:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "montra_cache_table",
+            "TIMEOUT": 1800,  # 30 minutes default
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        }
+    }
 
 # ---------------------------------------------------------------------------
 # Auth

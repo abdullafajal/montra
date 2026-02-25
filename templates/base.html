@@ -63,8 +63,6 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
-    <!-- HTMX CDN -->
-    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
 
     <style>
         * { font-family: 'Inter', system-ui, sans-serif; }
@@ -239,47 +237,9 @@
         @apply bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-2 transition-all hover:bg-white/20;
     }
 </style>
-    <style>
-        /* Progress Bar for HTMX */
-        .htmx-indicator {
-            opacity: 0;
-            transition: opacity 100ms ease-in;
-        }
-        .htmx-request .htmx-indicator {
-            opacity: 1;
-        }
-        .htmx-request.htmx-indicator {
-            opacity: 1;
-        }
-        #nprogress {
-            pointer-events: none;
-        }
-        #nprogress .bar {
-            background: #C8E64A;
-            position: fixed;
-            z-index: 1031;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-        }
-    </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-mn-bg dark:bg-mn-bg-dark text-mn-text dark:text-mn-text-dark min-h-screen antialiased" hx-boost="true" hx-target="#htmx-content" hx-swap="innerHTML show:window:top" hx-indicator="#global-progress">
-    
-    <!-- Top Progress Bar -->
-    <div id="global-progress" class="htmx-indicator" style="position:fixed;top:0;left:0;width:100%;z-index:9999;">
-        <div style="height:3px;background:#C8E64A;width:100%;animation:progress 1.5s infinite linear;transform-origin:left;will-change:transform;"></div>
-    </div>
-    <style>
-        @keyframes progress {
-            0% { transform: scaleX(0); opacity: 1; }
-            50% { transform: scaleX(0.5); opacity: 1; }
-            100% { transform: scaleX(1); opacity: 0; }
-        }
-    </style>
-
+<body class="bg-mn-bg dark:bg-mn-bg-dark text-mn-text dark:text-mn-text-dark min-h-screen antialiased">
     {% if request.user.is_authenticated %}
     <!-- ===== DESKTOP SIDEBAR (lg+) ===== -->
     <aside class="hidden lg:flex fixed top-0 left-0 h-full w-64 bg-mn-card dark:bg-mn-card-dark flex-col z-50 border-r border-mn-border dark:border-mn-border-dark shadow-soft">
@@ -341,7 +301,7 @@
 
     <!-- ===== MAIN CONTENT ===== -->
     <div class="{% if request.user.is_authenticated %}lg:ml-64{% endif %} min-h-screen pb-24 lg:pb-6">
-        <div id="htmx-content" class="max-w-2xl mx-auto lg:max-w-5xl transition-opacity duration-200">
+        <div id="main-content" class="max-w-2xl mx-auto lg:max-w-5xl transition-opacity duration-200">
 
             {% block top_bar %}{% endblock %}
 
@@ -477,76 +437,21 @@
             lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
         }, { passive: true });
 
-        // Update active nav links on HTMX swap
-        document.body.addEventListener('htmx:afterSettle', function(evt) {
-            updateNavActiveStates(window.location.pathname);
-            
-            // Re-apply fade-out to flash messages loaded via HTMX
+        // Global Skeleton Loader Handling
+        document.addEventListener('DOMContentLoaded', () => {
+            // Apply a slight delay to mimic SPA loading perfectly
             setTimeout(() => {
-                const el = document.getElementById('flash-messages');
-                if (el) el.style.display = 'none';
-            }, 4000);
+                const skeletons = document.querySelectorAll('[data-skeleton]');
+                const contents = document.querySelectorAll('[data-content]');
+                
+                skeletons.forEach(s => s.classList.add('hidden'));
+                contents.forEach(c => {
+                    c.classList.remove('hidden');
+                    c.classList.add('animate-fade-in');
+                });
+            }, 300); // 300ms transition delay
         });
 
-        document.body.addEventListener('htmx:beforeRequest', function(evt) {
-            const main = document.querySelector('main');
-            if (main) main.style.opacity = '0.6';
-        });
-        document.body.addEventListener('htmx:afterRequest', function(evt) {
-            const main = document.querySelector('main');
-            if (main) main.style.opacity = '1';
-        });
-
-        function updateNavActiveStates(currentPath) {
-            // Function to handle active state for nav items
-            const activeClassesList = 'bg-mn-accent text-mn-dark'.split(' ');
-            const inactiveClassesList = 'text-gray-400 hover:text-gray-300'.split(' ');
-            const sidenavActiveClassList = 'nav-item-active'.split(' ');
-
-            // Paths mapping to an array of element IDs
-            const routeMap = {
-                '^/$': ['sidenav-home', 'nav-dashboard'],
-                '^/transactions/categories': ['sidenav-categories'],
-                '^/transactions/budgets': ['sidenav-budgets', 'nav-budgets'],
-                '^/transactions/savings': ['sidenav-savings', 'nav-savings'],
-                '^/transactions': ['sidenav-history', 'nav-transactions'],
-                '^/reports': ['sidenav-reports', 'nav-reports'],
-                '^/accounts/profile': ['sidenav-profile']
-            };
-
-            // First remove active state from all
-            document.querySelectorAll('nav a').forEach(el => {
-                if (el.id.startsWith('sidenav-')) {
-                    el.classList.remove(...sidenavActiveClassList);
-                } else if (el.id.startsWith('nav-')) {
-                    el.classList.remove(...activeClassesList);
-                    el.classList.add(...inactiveClassesList);
-                }
-            });
-
-            // Then apply active to matching path
-            for (const [pattern, ids] of Object.entries(routeMap)) {
-                if (new RegExp(pattern).test(currentPath) && 
-                    !(pattern === '^/transactions' && currentPath.includes('/categories')) &&
-                    !(pattern === '^/transactions' && currentPath.includes('/budgets')) &&
-                    !(pattern === '^/transactions' && currentPath.includes('/savings'))
-                ) {
-                    ids.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) {
-                            if (id.startsWith('sidenav-')) {
-                                el.classList.add(...sidenavActiveClassList);
-                            } else {
-                                el.classList.remove(...inactiveClassesList);
-                                el.classList.add(...activeClassesList);
-                            }
-                        }
-                    });
-                    // Only match most specific route
-                    break;
-                }
-            }
-        }
     })();
     </script>
     {% block extra_js %}{% endblock %}

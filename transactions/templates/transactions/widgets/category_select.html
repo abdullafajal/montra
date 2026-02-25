@@ -69,10 +69,7 @@
             initCustomSelect(name);
         });
         
-        // HTMX re-init hook
-        document.body.addEventListener('htmx:afterSwap', function(evt) {
-            initCustomSelect(name);
-        });
+
 
         function initCustomSelect(widgetName) {
             const select = document.getElementById('{{ widget.attrs.id }}');

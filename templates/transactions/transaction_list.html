@@ -1,9 +1,22 @@
-{% extends request.META.HTTP_HX_REQUEST|yesno:"base_htmx.html,base.html" %}
+{% extends 'base.html' %}
 {% load core_tags %}
 
 {% block title %}Transactions{% endblock %}
 
 {% block top_bar %}
+<!-- SKELETON TOP BAR -->
+<div data-skeleton class="animate-pulse px-5 pt-6 pb-2 lg:px-6 lg:pt-8">
+    <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark lg:hidden"></div>
+            <div class="w-32 h-7 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+        </div>
+        <div class="w-10 h-10 lg:w-40 lg:h-10 rounded-xl lg:rounded-2xl bg-mn-card dark:bg-mn-card-dark"></div>
+    </div>
+</div>
+
+<!-- ACTUAL TOP BAR -->
+<div data-content class="hidden">
 <div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8">
     <!-- Header: Back + Title + Add -->
     <div class="flex items-center justify-between mb-5">
@@ -93,10 +106,79 @@
         </div>
     </form>
 </div>
+</div>
 {% endblock %}
 
 {% block content %}
-<div class="animate-fade-in space-y-2">
+
+<!-- SKELETON LOADER -->
+<div data-skeleton class="animate-pulse space-y-4 px-4 lg:px-6">
+    <!-- Header & Search Skeleton -->
+    <div class="mb-5 flex justify-between items-center">
+        <div class="w-32 h-6 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+        <div class="w-32 h-10 bg-mn-card dark:bg-mn-card-dark rounded-xl"></div>
+    </div>
+    <div class="w-full h-12 bg-mn-card dark:bg-mn-card-dark rounded-2xl mb-2"></div>
+    <div class="flex gap-2 pb-4">
+        <div class="w-24 h-9 bg-mn-card dark:bg-mn-card-dark rounded-xl"></div>
+        <div class="w-32 h-9 bg-mn-card dark:bg-mn-card-dark rounded-xl"></div>
+        <div class="w-40 h-9 bg-mn-card dark:bg-mn-card-dark rounded-xl"></div>
+    </div>
+
+    <!-- Monthly Headers & Rows Skeleton -->
+    <div>
+        <div class="w-20 h-3 bg-mn-card dark:bg-mn-card-dark rounded mb-2"></div>
+        <div class="space-y-2">
+            <!-- Row 1 -->
+            <div class="flex items-center justify-between p-4 bg-mn-card dark:bg-mn-card-dark rounded-2xl border border-mn-border dark:border-mn-border-dark">
+                <div class="flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark"></div>
+                    <div>
+                        <div class="w-32 h-4 rounded bg-mn-border dark:bg-mn-border-dark mb-2"></div>
+                        <div class="w-24 h-3 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+                    </div>
+                </div>
+                <div class="w-16 h-5 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+            <!-- Row 2 -->
+            <div class="flex items-center justify-between p-4 bg-mn-card dark:bg-mn-card-dark rounded-2xl border border-mn-border dark:border-mn-border-dark">
+                <div class="flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark"></div>
+                    <div>
+                        <div class="w-24 h-4 rounded bg-mn-border dark:bg-mn-border-dark mb-2"></div>
+                        <div class="w-32 h-3 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+                    </div>
+                </div>
+                <div class="w-16 h-5 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+             <!-- Row 3 -->
+            <div class="flex items-center justify-between p-4 bg-mn-card dark:bg-mn-card-dark rounded-2xl border border-mn-border dark:border-mn-border-dark">
+                <div class="flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark"></div>
+                    <div>
+                        <div class="w-32 h-4 rounded bg-mn-border dark:bg-mn-border-dark mb-2"></div>
+                        <div class="w-20 h-3 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+                    </div>
+                </div>
+                <div class="w-16 h-5 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+            <!-- Row 4 -->
+            <div class="flex items-center justify-between p-4 bg-mn-card dark:bg-mn-card-dark rounded-2xl border border-mn-border dark:border-mn-border-dark">
+                <div class="flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark"></div>
+                    <div>
+                        <div class="w-20 h-4 rounded bg-mn-border dark:bg-mn-border-dark mb-2"></div>
+                        <div class="w-24 h-3 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+                    </div>
+                </div>
+                <div class="w-16 h-5 rounded bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTUAL CONTENT -->
+<div data-content class="hidden">
     {% regroup transactions by date|date:"F Y" as monthly_txns %}
     {% for group in monthly_txns %}
     <div class="mb-4">
@@ -160,5 +242,6 @@
         {% endif %}
     </div>
     {% endif %}
+</div>
 </div>
 {% endblock %}
