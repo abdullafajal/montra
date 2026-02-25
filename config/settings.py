@@ -144,7 +144,7 @@ PAGE_SIZE = 10
 # ---------------------------------------------------------------------------
 PWA_APP_NAME = 'Montra'
 PWA_APP_DESCRIPTION = "Modern Expense & Income Tracker"
-PWA_APP_THEME_COLOR = '#1A1A1A'
+PWA_APP_THEME_COLOR = '#0F0F0F'
 PWA_APP_BACKGROUND_COLOR = '#ffffff'
 PWA_APP_DISPLAY = 'standalone'
 PWA_APP_SCOPE = '/'
