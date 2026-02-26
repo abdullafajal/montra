@@ -142,10 +142,10 @@
 
 <!-- ACTUAL CONTENT -->
 <div data-content class="hidden">
-<div class="animate-fade-in grid grid-cols-1 lg:grid-cols-2 gap-3">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
     {% for goal in goals %}
     {% with pct=goal.get_percentage remaining=goal.get_remaining %}
-    <div class="mn-card p-5 {% if goal.is_completed %}opacity-75{% endif %}">
+    <div class="mn-card p-5 {% if goal.is_completed %}opacity-75{% endif %}" data-aos="fade-up">
         <!-- Header -->
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">

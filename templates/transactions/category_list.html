@@ -129,10 +129,10 @@
 
 <!-- ACTUAL CONTENT -->
 <div data-content class="hidden">
-<div class="animate-fade-in">
+<div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {% for cat in categories %}
-        <div class="mn-card p-4 flex items-center gap-3">
+        <div class="mn-card p-4 flex items-center gap-3" data-aos="fade-up">
             <div class="w-11 h-11 bg-mn-accent rounded-xl flex items-center justify-center flex-shrink-0">
                 <span class="material-symbols-outlined text-mn-dark" style="font-size: 22px;">{{ cat.icon }}</span>
             </div>

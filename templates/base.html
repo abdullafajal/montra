@@ -463,33 +463,16 @@
                     });
                 });
 
-                // Dynamically add AOS attributes so templates don't have to be cluttered
-                // Expanded selector to catch almost every structural element for "all places" coverage
-                const scrollItems = document.querySelectorAll(
-                    '[data-content] > *, [data-content] form, .mn-card, .scroll-reveal, [data-content] .grid > div, [data-content] .space-y-2 > *, [data-content] .space-y-3 > *, [data-content] .space-y-4 > *, [data-content] table tr, [data-content] ul li'
-                );
-                
-                scrollItems.forEach((item, index) => {
-                    // Ignore scripts, styles, and empty invisible divs
-                    if (!item.hasAttribute('data-aos') && !['SCRIPT','STYLE'].includes(item.tagName)) {
-                        // Use a softer fade-up
-                        item.setAttribute('data-aos', 'fade-up');
-                        
-                        // Apply a gentle stagger for items near the top (initial load)
-                        if (index < 30) {
-                            // Reduced stagger gap for more fluidity
-                            item.setAttribute('data-aos-delay', (index * 25).toString());
-                        }
-                    }
-                });
+                // Note: AOS attributes (data-aos="fade-up") are now added explicitly in the templates
+                // for fine-grained control, instead of being applied globally here.
 
                 // Initialize AOS after DOM adjustments are locked in
                 if (typeof AOS !== 'undefined') {
                     AOS.init({
                         once: true, // only animate once
-                        offset: 10, // trigger animation immediately on small scrolls
-                        duration: 700, // perfect balance of speed and smoothness
-                        easing: 'ease-out', // incredibly natural deceleration curve
+                        offset: 0, // trigger animation immediately
+                        duration: 1000, // much longer duration for a buttery glide
+                        easing: 'ease-out-cubic', // ultra-smooth deceleration
                     });
                     
                     // Force AOS to recalculate offsets after the 300ms skeleton swap is fully painted
