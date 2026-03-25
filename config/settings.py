@@ -182,3 +182,7 @@ PWA_APP_DIR = 'ltr'
 PWA_APP_LANG = 'en-US'
 
 X_FRAME_OPTIONS = 'ALLOWALL'
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://espere.in",
+]
