@@ -25,6 +25,9 @@ env/
 .DS_Store
 Thumbs.db
 
+# Environment
+.env
+
 # Project specific
 core/management/commands/__pycache__/
 transactions/migrations/__pycache__/

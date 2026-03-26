@@ -313,11 +313,7 @@
             {% if messages %}
             <div id="flash-messages" class="px-4 pt-2 space-y-2 lg:px-6">
                 {% for message in messages %}
-                <div class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium animate-fade-in shadow-soft
-                    {% if message.tags == 'success' %}bg-mn-dark text-mn-accent
-                    {% elif message.tags == 'error' %}bg-mn-dark text-red-400
-                    {% elif message.tags == 'warning' %}bg-mn-dark text-amber-400
-                    {% else %}bg-mn-dark text-white{% endif %}">
+                <div class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium animate-fade-in shadow-soft bg-mn-dark text-mn-accent">
                     {% if message.tags == 'success' %}
                     <span class="material-symbols-outlined icon-sm">check_circle</span>
                     {% elif message.tags == 'error' %}
@@ -383,7 +379,7 @@
 
         <!-- ===== FLOATING MOBILE BOTTOM NAV (< lg) ===== -->
         {% if request.user.is_authenticated %}
-
+        {% if request.path == '/' or request.path == '/transactions/' or request.path == '/budgets/' or request.path == '/reports/' or request.path == '/savings/' %}
 
         <nav id="bottom-nav" class="fixed bottom-4 left-4 right-4 lg:hidden z-50 transition-transform duration-500">
             <div class="bg-mn-dark dark:bg-mn-card-dark rounded-[28px] px-3 py-3 flex items-center justify-evenly" style="box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.12);">
@@ -404,6 +400,7 @@
                 </a>
             </div>
         </nav>
+        {% endif %}
         {% endif %}
     </div>
 

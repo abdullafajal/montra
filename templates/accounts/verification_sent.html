@@ -1,0 +1,53 @@
+{% load pwa %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Your Email — Montra</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/images/icons/icon-32x32.png">
+    {% progressive_web_app_meta %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+    <style>* { font-family: 'Inter', system-ui, sans-serif; }</style>
+</head>
+<body class="bg-[#F5F5F5] min-h-screen flex items-center justify-center px-4 antialiased">
+    <div class="w-full max-w-sm">
+        <!-- Brand -->
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-[#1A1A1A] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span class="material-symbols-outlined text-[#C8E64A]" style="font-size:32px;">mark_email_read</span>
+            </div>
+            <h1 class="text-2xl font-bold text-[#1A1A1A]">Check Your Email</h1>
+            <p class="text-sm text-[#9E9E9E] mt-1">We've sent a verification link</p>
+        </div>
+
+        <!-- Info Card -->
+        <div class="bg-white rounded-[24px] p-6 text-center" style="box-shadow: 0 1px 8px rgba(0,0,0,0.04), 0 4px 24px rgba(0,0,0,0.04);">
+            <div class="w-20 h-20 bg-[#F0F7D4] rounded-full flex items-center justify-center mx-auto mb-5">
+                <span class="material-symbols-outlined text-[#7A9A1E]" style="font-size:40px;">forward_to_inbox</span>
+            </div>
+
+            <p class="text-sm text-[#1A1A1A] leading-relaxed mb-2">
+                We've sent a verification email to
+            </p>
+            <p class="text-sm font-bold text-[#1A1A1A] mb-4">{{ email }}</p>
+            <p class="text-xs text-[#9E9E9E] leading-relaxed">
+                Click the link in the email to activate your account. If you don't see it, check your spam folder.
+            </p>
+
+            <hr class="my-5 border-[#EEEEEE]">
+
+            <p class="text-xs text-[#9E9E9E]">
+                Didn't receive the email?
+                <a href="{% url 'accounts:resend_verification' %}" class="font-semibold text-[#1A1A1A] hover:underline">Resend</a>
+            </p>
+        </div>
+
+        <p class="text-center text-sm text-[#9E9E9E] mt-5">
+            <a href="{% url 'accounts:login' %}" class="font-semibold text-[#1A1A1A] hover:underline">← Back to Login</a>
+        </p>
+    </div>
+</body>
+</html>

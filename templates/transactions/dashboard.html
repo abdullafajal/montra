@@ -8,19 +8,6 @@
 
 <!-- SKELETON LOADER -->
 <div data-skeleton class="animate-pulse">
-    {% if request.user.userprofile.show_hero_image %}
-    <!-- Hero Skeleton -->
-    <div class="-mx-4 -mt-4 min-h-[480px] bg-mn-card dark:bg-mn-card-dark lg:-mx-6 lg:-mt-6 relative flex flex-col justify-end pb-12">
-        <div class="absolute top-4 left-4 right-4 flex justify-between">
-            <div class="w-24 h-10 bg-mn-border dark:bg-mn-border-dark rounded-full"></div>
-            <div class="w-11 h-11 bg-mn-border dark:bg-mn-border-dark rounded-full"></div>
-        </div>
-        <div class="px-6 mx-auto w-full max-w-lg mb-8 text-center flex flex-col items-center">
-            <div class="w-40 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-3"></div>
-            <div class="w-56 h-10 bg-mn-border dark:bg-mn-border-dark rounded-xl"></div>
-        </div>
-    </div>
-    {% else %}
     <!-- Minimal Header Skeleton -->
     <div class="pt-8 pb-6 flex items-center justify-between">
         <div>
@@ -29,10 +16,9 @@
         </div>
         <div class="w-12 h-12 bg-mn-card dark:bg-mn-card-dark rounded-2xl"></div>
     </div>
-    {% endif %}
 
     <!-- Balance Card Skeleton -->
-    <div class="relative {% if request.user.userprofile.show_hero_image %}-mt-10{% else %}mt-2{% endif %} z-20">
+    <div class="relative mt-2 z-20">
         <div class="bg-mn-card dark:bg-mn-card-dark rounded-3xl p-6 border border-mn-border dark:border-mn-border-dark">
             <div class="w-24 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-4"></div>
             <div class="w-48 h-10 bg-mn-border dark:bg-mn-border-dark rounded mb-6"></div>
@@ -81,49 +67,7 @@
 <!-- ACTUAL CONTENT -->
 <div data-content class="hidden">
 {% cache 1800 dashboard request.user.id %}
-{% if request.user.userprofile.show_hero_image %}
-<!-- Cinematic Profile Hero Section -->
-<div id="profile-hero" class="relative -mx-4 -mt-4 min-h-[480px] flex flex-col items-center justify-end pb-12 transition-all duration-700 origin-top overflow-hidden lg:-mx-6 lg:-mt-6">
-    <!-- Background Image / Fallback -->
-    <div class="absolute inset-0 z-0 overflow-hidden">
-        {% if request.user.userprofile.avatar %}
-            <img src="{{ request.user.userprofile.avatar.url }}" alt="{{ request.user.username }}" class="w-full h-full object-cover animate-ken-burns" style="animation-duration: 40s;">
-        {% else %}
-            <div class="w-full h-full bg-mn-dark flex items-center justify-center animate-ken-burns" style="animation-duration: 40s;">
-                <span class="text-[120px] font-bold text-mn-accent opacity-20">{{ request.user.username|make_list|first|upper }}</span>
-            </div>
-        {% endif %}
-        <!-- Atmospheric Layers -->
-        <div class="hero-grain"></div>
-        <!-- Gradient Overlays for readability -->
-        <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-mn-bg dark:to-mn-bg-dark"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-mn-bg/80 dark:from-mn-bg-dark/80 via-transparent to-transparent"></div>
-    </div>
-
-    <!-- Floating Top Controls -->
-    <div class="absolute top-4 left-4 right-4 z-20 flex items-center justify-between">
-        <div class="px-5 py-2.5 rounded-full bg-mn-accent shadow-[0_4px_20px_rgba(200,230,74,0.3)] transition-all hover:scale-105 cursor-default animate-float">
-            <span class="text-sm font-bold text-mn-dark tracking-widest uppercase opacity-90">Montra</span>
-        </div>
-        <a href="{% url 'accounts:profile' %}" class="w-11 h-11 rounded-full bg-mn-accent flex items-center justify-center text-mn-dark shadow-[0_4px_20px_rgba(200,230,74,0.3)] transition-all active:scale-90 hover:scale-110 group animate-float" style="animation-delay: 0.2s;">
-            <span class="material-symbols-outlined icon-sm group-hover:rotate-45 transition-transform duration-500">settings</span>
-        </a>
-    </div>
-
-    <!-- Hero Content (Refined Minimalist Layout) -->
-    <div class="relative z-10 text-center px-6 max-w-lg animate-fade-in">
-        <p class="text-sm text-mn-dark opacity-90 font-bold mb-1 drop-shadow-sm uppercase tracking-wider">Good {{ greeting }}, it's {% now "l, M d" %}</p>
-        <div class="relative inline-block animate-sheen rounded-2xl px-4 py-1">
-            <h1 class="text-4xl font-extrabold text-mn-dark tracking-tight leading-tight relative z-10">
-                {{ request.user.get_full_name|default:request.user.username }}
-            </h1>
-        </div>
-        <!-- Subtle Animated Aura -->
-        <div class="absolute -inset-20 bg-mn-accent/10 blur-[100px] -z-10 rounded-full animate-pulse-soft"></div>
-    </div>
-</div>
-{% else %}
-<!-- Simple Header when Hero is disabled -->
+<!-- Minimal Header -->
 <div class="pt-8 pb-6 animate-fade-in">
     <div class="flex items-center justify-between">
         <div>
@@ -137,10 +81,9 @@
         </a>
     </div>
 </div>
-{% endif %}
 
 <!-- Balance Main Card (Floating Overlapping) -->
-<div class="relative {% if request.user.userprofile.show_hero_image %}-mt-10{% else %}mt-2{% endif %} z-20" data-aos="fade-up" data-aos-delay="0">
+<div class="relative mt-2 z-20" data-aos="fade-up" data-aos-delay="0">
     <div class="bg-mn-dark dark:bg-mn-card-dark rounded-3xl p-6 text-white shadow-elevated overflow-hidden relative border border-white/5">
         <!-- Subtle gradient overlay -->
         <div class="absolute inset-0 opacity-[0.04]" style="background: radial-gradient(circle at top right, #C8E64A, transparent 60%);"></div>
@@ -446,18 +389,6 @@
 
 <script>
     (function() {
-        if (!window._heroScrollInit) {
-            window.addEventListener('scroll', () => {
-                const hero = document.getElementById('profile-hero');
-                if (hero) {
-                    const scrollPos = window.scrollY;
-                    const alpha = Math.max(0, 1 - (scrollPos / 350));
-                    hero.style.opacity = alpha;
-                }
-            });
-            window._heroScrollInit = true;
-        }
-
         // Balance Visibility Toggle
         const toggleBtn = document.getElementById('toggle-balance-btn');
         const toggleIcon = document.getElementById('toggle-balance-icon');
