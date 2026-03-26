@@ -29,6 +29,7 @@ Thumbs.db
 .env
 
 # Project specific
+email_config.py
 core/management/commands/__pycache__/
 transactions/migrations/__pycache__/
 reports/__pycache__/
