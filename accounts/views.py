@@ -22,17 +22,22 @@ from .models import UserProfile, EmailVerificationToken, PasswordResetToken
 
 
 # ---------------------------------------------------------------------------
-# Threaded email helper
+# Email helper
 # ---------------------------------------------------------------------------
 
-def _send_email_async(subject, plain_message, from_email, recipient_list, html_message):
-    """Send email in a background thread so the response is instant."""
-    thread = threading.Thread(
-        target=send_mail,
-        args=(subject, plain_message, from_email, recipient_list),
-        kwargs={"html_message": html_message, "fail_silently": True},
-    )
-    thread.start()
+def _send_email_sync(subject, plain_message, from_email, recipient_list, html_message):
+    """Send email synchronously."""
+    try:
+        send_mail(
+            subject, 
+            plain_message, 
+            from_email, 
+            recipient_list, 
+            html_message=html_message, 
+            fail_silently=False
+        )
+    except Exception as e:
+        print(f"Failed to send email to {recipient_list}: {e}")
 
 
 def _send_verification_email(request, user, token):
@@ -44,7 +49,7 @@ def _send_verification_email(request, user, token):
         "verify_url": verify_url,
     })
     plain_message = strip_tags(html_message)
-    _send_email_async(subject, plain_message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message)
+    _send_email_sync(subject, plain_message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message)
 
 
 def _send_password_reset_email(request, user, token):
@@ -56,7 +61,7 @@ def _send_password_reset_email(request, user, token):
         "reset_url": reset_url,
     })
     plain_message = strip_tags(html_message)
-    _send_email_async(subject, plain_message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message)
+    _send_email_sync(subject, plain_message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message)
 
 
 # ---------------------------------------------------------------------------
