@@ -17,11 +17,14 @@
         <!-- Brand -->
         <div class="text-center mb-8">
             <div class="w-16 h-16 bg-[#1A1A1A] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span class="material-symbols-outlined text-white" style="font-size:32px;">account_balance_wallet</span>
+                <span class="material-symbols-outlined text-[#C8E64A]" style="font-size:32px;">account_balance_wallet</span>
             </div>
             <h1 class="text-2xl font-bold text-[#1A1A1A]">Create Account</h1>
             <p class="text-sm text-[#9E9E9E] mt-1">Start tracking with Montra today</p>
         </div>
+
+        <!-- Flash Messages -->
+        {% include "accounts/_messages.html" %}
 
         <!-- Register Card -->
         <form method="post" class="bg-white rounded-[24px] p-6 space-y-4" style="box-shadow: 0 1px 8px rgba(0,0,0,0.04), 0 4px 24px rgba(0,0,0,0.04);">
@@ -42,7 +45,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-[#1A1A1A] mb-1.5">Email</label>
-                <input type="email" name="email" value="{{ form.email.value|default:'' }}"
+                <input type="email" name="email" required value="{{ form.email.value|default:'' }}"
                        class="w-full px-4 py-3 border border-[#EEEEEE] bg-[#FAFAFA] rounded-[14px] text-sm text-[#1A1A1A] focus:border-[#C8E64A] focus:ring-2 focus:ring-[#C8E64A]/20 outline-none transition-all placeholder:text-[#9E9E9E]"
                        placeholder="your@email.com">
             </div>
@@ -59,7 +62,7 @@
                        placeholder="Confirm your password">
             </div>
 
-            <button type="submit" class="w-full py-3.5 bg-mn-dark text-mn-accent font-semibold rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] text-sm shadow-soft">
+            <button type="submit" class="w-full py-3.5 bg-[#1A1A1A] text-[#C8E64A] font-semibold rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] text-sm" style="box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
                 Create Account
             </button>
         </form>

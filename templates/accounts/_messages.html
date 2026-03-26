@@ -1,0 +1,22 @@
+<!-- Flash Messages — same design as base.html -->
+{% if messages %}
+<div id="flash-messages" class="mb-4 space-y-2">
+    {% for message in messages %}
+    <div class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium bg-[#1A1A1A] text-[#C8E64A]"
+        style="box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+        {% if message.tags == 'success' %}
+        <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span>
+        {% elif message.tags == 'error' %}
+        <span class="material-symbols-outlined" style="font-size:18px;">error</span>
+        {% elif message.tags == 'warning' %}
+        <span class="material-symbols-outlined" style="font-size:18px;">warning</span>
+        {% else %}
+        <span class="material-symbols-outlined" style="font-size:18px;">info</span>
+        {% endif %}
+        <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+</div>
+<script>setTimeout(function(){var el=document.getElementById('flash-messages');if(el)el.style.display='none';},4000);</script>
+{% endif %}
+

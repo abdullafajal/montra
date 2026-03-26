@@ -3,6 +3,9 @@ Django settings for Montra — Expense & Income Tracker.
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -14,6 +17,14 @@ SECRET_KEY = os.environ.get(
 DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() in ("true", "1", "yes")
 
 ALLOWED_HOSTS = ["*"]
+
+# ---------------------------------------------------------------------------
+# Auth Backends
+# ---------------------------------------------------------------------------
+AUTHENTICATION_BACKENDS = [
+    "accounts.backends.EmailOrUsernameModelBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
 
 # ---------------------------------------------------------------------------
 # Apps
@@ -83,7 +94,7 @@ DATABASES = {
 # ---------------------------------------------------------------------------
 # Caching
 # ---------------------------------------------------------------------------
-ENABLE_CACHING = os.environ.get("ENABLE_CACHING", "True").lower() in ("true", "1", "yes")
+ENABLE_CACHING = os.environ.get("ENABLE_CACHING", "False").lower() in ("true", "1", "yes")
 
 if ENABLE_CACHING:
     CACHES = {
@@ -113,6 +124,17 @@ AUTH_PASSWORD_VALIDATORS = [
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
+
+# ---------------------------------------------------------------------------
+# Email
+# ---------------------------------------------------------------------------
+EMAIL_BACKEND = os.environ.get("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.environ.get("DJANGO_EMAIL_HOST", "smtp.gmail.com")
+EMAIL_USE_TLS = os.environ.get("DJANGO_EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
+EMAIL_PORT = int(os.environ.get("DJANGO_EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("DJANGO_EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("DJANGO_EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # ---------------------------------------------------------------------------
 # i18n
