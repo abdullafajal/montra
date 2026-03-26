@@ -54,10 +54,11 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ["currency", "theme", "avatar"]
+        fields = ["currency", "theme", "email_reminders", "avatar"]
         widgets = {
             "currency": forms.Select(attrs={"class": tw}),
             "theme": forms.Select(attrs={"class": tw}),
+            "email_reminders": forms.CheckboxInput(attrs={"class": "w-5 h-5 rounded border-m3-outline text-m3-primary focus:ring-m3-primary transition-all"}),
             "avatar": forms.FileInput(attrs={"class": tw}),
         }
 

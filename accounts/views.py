@@ -32,7 +32,6 @@ def _send_email_async(subject, plain_message, from_email, recipient_list, html_m
         args=(subject, plain_message, from_email, recipient_list),
         kwargs={"html_message": html_message, "fail_silently": True},
     )
-    thread.daemon = True
     thread.start()
 
 
@@ -94,7 +93,7 @@ class VerifyEmailView(View):
         verification.delete()
         # Auto-login after verification
         login(request, user)
-        messages.success(request, "Email verified successfully! Welcome to Montra.")
+        messages.success(request, "Email verified successfully! Welcome to Espere.")
         return redirect("/")
 
 
@@ -182,6 +181,14 @@ class LoginView(View):
         from django.db.models import Q
         user = User.objects.filter(Q(username__iexact=username) | Q(email__iexact=username)).first()
         if user and not user.is_active:
+            # If they enter the correct password, reset their resend attempts
+            if user.check_password(request.POST.get("password")):
+                from accounts.models import EmailVerificationToken
+                token_obj = EmailVerificationToken.objects.filter(user=user).first()
+                if token_obj:
+                    token_obj.attempt_count = 0
+                    token_obj.save()
+                    
             return render(request, "accounts/login.html", {
                 "form": form,
                 "needs_verification": True,

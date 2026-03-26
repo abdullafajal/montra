@@ -65,6 +65,14 @@
             <div class="space-y-4">
                 <div><label class="block text-sm font-medium text-mn-text dark:text-mn-text-dark mb-1.5">Currency</label>{{ form.currency }}</div>
                 <div><label class="block text-sm font-medium text-mn-text dark:text-mn-text-dark mb-1.5">Theme</label>{{ form.theme }}</div>
+                
+                <div class="flex items-center justify-between py-2">
+                    <div class="space-y-0.5">
+                        <label class="text-sm font-medium text-mn-text dark:text-mn-text-dark">Daily Reminders</label>
+                        <p class="text-xs text-mn-muted dark:text-mn-muted-dark">Receive email reminders to log expenses</p>
+                    </div>
+                    {{ form.email_reminders }}
+                </div>
             </div>
         </div>
 

@@ -164,7 +164,7 @@ PAGE_SIZE = 10
 # ---------------------------------------------------------------------------
 # PWA Settings
 # ---------------------------------------------------------------------------
-PWA_APP_NAME = 'Montra'
+PWA_APP_NAME = 'Espere'
 PWA_APP_DESCRIPTION = "Modern Expense & Income Tracker"
 PWA_APP_THEME_COLOR = '#0F0F0F'
 PWA_APP_BACKGROUND_COLOR = '#ffffff'

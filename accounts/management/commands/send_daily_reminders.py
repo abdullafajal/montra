@@ -20,7 +20,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("No users matched the criteria to send reminders to."))
             return
 
-        subject = "Time to update your Montra expenses!"
+        subject = "Time to update your Espere expenses!"
         sent_count = 0
 
         for user in users:

@@ -136,7 +136,7 @@ class ExportCSVView(LoginRequiredMixin, View):
         txns, _ = _filter_by_period(txns, period)
 
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="montra_transactions.csv"'
+        response["Content-Disposition"] = 'attachment; filename="espere_transactions.csv"'
 
         writer = csv.writer(response)
         writer.writerow(["Date", "Time", "Type", "Category", "Amount", "Payment Method", "Notes"])
@@ -231,7 +231,7 @@ class ExportPDFView(LoginRequiredMixin, View):
         # --- Header ---
         user = request.user
         today = timezone.now().date()
-        elements.append(Paragraph("Montra.", title_style))
+        elements.append(Paragraph("Espere.", title_style))
         elements.append(Paragraph("Financial Report", subtitle_style))
         elements.append(Spacer(1, 0.15 * inch))
         elements.append(HRFlowable(
@@ -351,7 +351,7 @@ class ExportPDFView(LoginRequiredMixin, View):
             alignment=TA_CENTER,
         )
         elements.append(Paragraph(
-            f"Montra Financial Tracker · Generated {today.strftime('%b %d, %Y')}",
+            f"Espere Financial Tracker · Generated {today.strftime('%b %d, %Y')}",
             footer_style,
         ))
 
@@ -366,6 +366,6 @@ class ExportPDFView(LoginRequiredMixin, View):
         buffer.seek(0)
 
         response = HttpResponse(buffer, content_type="application/pdf")
-        response["Content-Disposition"] = 'attachment; filename="montra_report.pdf"'
+        response["Content-Disposition"] = 'attachment; filename="espere_report.pdf"'
         return response
 
