@@ -97,7 +97,7 @@ class VerifyEmailView(View):
         user.save()
         verification.delete()
         # Auto-login after verification
-        login(request, user)
+        login(request, user, backend='accounts.backends.EmailOrUsernameModelBackend')
         messages.success(request, "Email verified successfully! Welcome to Espere.")
         return redirect("/")
 
