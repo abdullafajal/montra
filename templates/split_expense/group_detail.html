@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ group.name }} - Splitwise{% endblock %}
+
+{% block top_bar %}
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex flex-col gap-4 relative">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'split_expense:group_list' %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all">
+                <span class="material-symbols-outlined icon-md text-mn-text dark:text-mn-text-dark">arrow_back</span>
+            </a>
+            <h1 class="text-xl font-bold text-mn-text dark:text-mn-text-dark">{{ group.name }}</h1>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <a href="{% url 'split_expense:group_member_add' group.id %}" class="w-10 h-10 lg:w-auto lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl bg-mn-accent flex items-center justify-center lg:gap-2 hover:bg-mn-accent-hover transition-colors shadow-soft" title="Add Member">
+                <span class="material-symbols-outlined icon-md text-mn-dark">person_add</span>
+                <span class="hidden lg:inline text-sm font-semibold text-mn-dark">Add Member</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Balance Summary Card (Dashboard Style) -->
+    {% if my_ledger %}
+    <div class="relative mt-2 z-20" data-aos="fade-up" data-aos-delay="0">
+        <div class="bg-mn-dark dark:bg-mn-card-dark rounded-3xl p-6 text-white shadow-elevated overflow-hidden relative border border-white/5">
+            <!-- Subtle gradient overlay -->
+            <div class="absolute inset-0 opacity-[0.04]" style="background: radial-gradient(circle at top right, #C8E64A, transparent 60%);"></div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-1">
+                    <p class="text-sm font-medium opacity-60">Your Net Balance</p>
+                </div>
+                <h2 class="text-4xl font-bold tracking-tight text-mn-accent transition-opacity duration-200">
+                    {% if my_ledger.net_balance > 0 %}{% endif %}{{ currency_symbol|default:"₹" }} {{ my_ledger.net_balance|floatformat:2|intcomma }}
+                </h2>
+
+                <!-- Total Paid / Your Share inline -->
+                <div class="flex items-center gap-4 mt-3">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-mn-accent/20">
+                            <span class="material-symbols-outlined text-mn-accent" style="font-size:14px;">arrow_upward</span>
+                        </span>
+                        <span class="text-xs opacity-70">Paid: {{ currency_symbol|default:"₹" }} {{ my_ledger.total_paid|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-mn-accent/20">
+                            <span class="material-symbols-outlined text-mn-accent" style="font-size:14px;">pie_chart</span>
+                        </span>
+                        <span class="text-xs opacity-70">Share: {{ currency_symbol|default:"₹" }} {{ my_ledger.total_owed|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <a href="{% url 'split_expense:expense_create' group.id %}" class="flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/15 rounded-2xl transition-colors active:scale-[0.97]">
+                        <span class="material-symbols-outlined icon-sm text-mn-accent">add</span>
+                        <span class="text-sm font-semibold">Expense</span>
+                    </a>
+                    <button onclick="switchTab('debts')" type="button" class="flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/15 rounded-2xl transition-colors active:scale-[0.97]">
+                        <span class="material-symbols-outlined icon-sm text-mn-accent">handshake</span>
+                        <span class="text-sm font-semibold">Settle Up</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6" data-aos="fade-up">
+
+    <!-- Tab Navigation -->
+    <div class="flex bg-mn-card dark:bg-mn-card-dark rounded-2xl p-1 shadow-soft">
+        <button onclick="switchTab('expenses')" id="btn-expenses" class="flex-1 py-2 text-sm font-semibold rounded-xl bg-mn-bg dark:bg-mn-dark text-mn-text dark:text-mn-text-dark transition-colors">Expenses</button>
+        <button onclick="switchTab('balances')" id="btn-balances" class="flex-1 py-2 text-sm font-semibold rounded-xl text-mn-muted hover:text-mn-text dark:hover:text-mn-text-dark transition-colors">Balances</button>
+        <button onclick="switchTab('debts')" id="btn-debts" class="flex-1 py-2 text-sm font-semibold rounded-xl text-mn-muted hover:text-mn-text dark:hover:text-mn-text-dark transition-colors">Settle Up</button>
+    </div>
+
+    <!-- Tab 1: Expenses List -->
+    <div id="tab-expenses" class="space-y-4">
+        {% if expenses %}
+            {% for expense in expenses %}
+            <a href="{% url 'split_expense:expense_detail' group.id expense.id %}" class="mn-card p-4 flex items-center gap-3.5 hover:shadow-elevated transition-all" data-aos="fade-up">
+                <div class="w-11 h-11 bg-mn-accent rounded-xl flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-mn-dark" style="font-size: 22px;">receipt_long</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm font-semibold text-mn-text dark:text-mn-text-dark truncate">{{ expense.description }}</h3>
+                    <p class="text-xs text-mn-muted dark:text-mn-muted-dark truncate">Paid by <span class="font-semibold">{{ expense.paid_by.get_full_name|default:expense.paid_by.username }}</span> on {{ expense.date|date:"M j" }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-mn-text dark:text-mn-text-dark">
+                        {{ currency_symbol|default:"₹" }} {{ expense.amount|floatformat:2|intcomma }}
+                    </span>
+                    <span class="material-symbols-outlined icon-sm text-mn-muted ml-0.5">chevron_right</span>
+                </div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-12 text-mn-muted">
+                <span class="material-symbols-outlined mb-2" style="font-size:48px;">receipt_long</span>
+                <p>No expenses yet. Start adding!</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Tab 2: Group Balances -->
+    <div id="tab-balances" class="hidden space-y-4">
+        <h3 class="text-lg font-bold text-mn-text dark:text-mn-text-dark px-2">Member Balances</h3>
+        {% for member in members %}
+        <div class="mn-card p-4 flex items-center gap-3.5 hover:shadow-elevated transition-all">
+            <div class="w-11 h-11 bg-mn-accent rounded-xl flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-mn-dark" style="font-size: 22px;">person</span>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-semibold text-mn-text dark:text-mn-text-dark truncate">{{ member.user.get_full_name|default:member.user.username }}</h3>
+                    {% if not member.is_accepted %}
+                    <span class="px-1.5 py-0.5 rounded-md bg-mn-border dark:bg-mn-border-dark text-[10px] font-bold text-mn-muted uppercase tracking-wider">Pending</span>
+                    {% endif %}
+                </div>
+                <div class="text-xs text-mn-muted mt-0.5 truncate">
+                    {% if member.net_balance > 0 %}
+                        Gets back <span class="text-income-dark font-semibold">{{ member.net_balance|floatformat:2|intcomma }}</span>
+                    {% elif member.net_balance < 0 %}
+                        To pay <span class="text-expense-dark font-semibold">{{ member.net_balance|stringformat:"f"|slice:"1:"|floatformat:2|intcomma }}</span>
+                    {% else %}
+                        Settled up
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex flex-col text-right text-[10px] font-semibold tracking-wide gap-1 mt-0.5">
+                <div class="flex items-center justify-end gap-1.5">
+                    <span class="text-mn-muted uppercase">Paid</span>
+                    <span class="text-mn-text dark:text-mn-text-dark font-bold">{{ currency_symbol|default:"₹" }}{{ member.total_paid|floatformat:0 }}</span>
+                </div>
+                <div class="flex items-center justify-end gap-1.5">
+                    <span class="text-mn-muted uppercase">Share</span>
+                    <span class="text-mn-text dark:text-mn-text-dark font-bold">{{ currency_symbol|default:"₹" }}{{ member.total_owed|floatformat:0 }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if pending_invitations %}
+        <div class="mt-4 pt-4 border-t border-mn-border dark:border-mn-border-dark">
+            <h4 class="text-xs font-bold text-mn-muted uppercase tracking-wider mb-3 px-2">Awaiting Signup</h4>
+            <div class="space-y-3">
+                {% for invite in pending_invitations %}
+                <div class="mn-card p-3 flex items-center justify-between border border-transparent hover:border-mn-accent/20 transition-colors">
+                    <div class="flex items-center gap-3 overflow-hidden pr-2">
+                        <div class="w-9 h-9 rounded-xl bg-mn-dark text-mn-accent flex items-center justify-center flex-shrink-0 shadow-inner border border-white/5">
+                            <span class="material-symbols-outlined icon-sm">mail</span>
+                        </div>
+                        <span class="text-sm font-semibold text-mn-text dark:text-mn-text-dark truncate">{{ invite.email }}</span>
+                    </div>
+                    <span class="text-[10px] bg-mn-dark text-mn-accent px-2.5 py-1 rounded-md font-bold uppercase tracking-wider flex-shrink-0 shadow-inner border border-white/5">Sent</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Add Member Button -->
+        <a href="{% url 'split_expense:group_member_add' group.id %}" class="w-full py-3 mt-4 border-2 border-dashed border-mn-border dark:border-mn-border-dark rounded-xl flex items-center justify-center gap-2 text-mn-muted hover:text-mn-text dark:hover:text-mn-text-dark hover:border-mn-accent transition-colors">
+            <span class="material-symbols-outlined icon-sm">person_add</span>
+            <span class="font-semibold text-sm">Add New Member</span>
+        </a>
+    </div>
+
+    <!-- Tab 3: Simplified Debts / Settle Up -->
+    <div id="tab-debts" class="hidden space-y-4">
+        <h3 class="text-lg font-bold text-mn-text dark:text-mn-text-dark px-2">Suggested Settlements</h3>
+        
+        {% if simplified_debts %}
+            {% for debt in simplified_debts %}
+            <div class="bg-white dark:bg-[#1A1A1A] rounded-2xl p-3 shadow-soft border border-gray-100 dark:border-white/5 w-full">
+                <div class="flex items-center gap-2.5">
+                    
+                    <!-- Compact Avatar -->
+                    <div class="w-10 h-10 rounded-xl bg-mn-accent flex items-center justify-center border border-mn-accent/20 flex-shrink-0 shadow-sm">
+                        <span class="material-symbols-outlined text-mn-dark" style="font-size: 20px;">person</span>
+                    </div>
+
+                    <!-- Compact Text section -->
+                    <div class="flex-1 flex flex-col justify-center min-w-0">
+                        <span class="text-[13px] font-bold text-mn-text dark:text-mn-text-dark truncate max-w-[120px] leading-snug">{{ debt.from.get_full_name|default:debt.from.username }}</span>
+                        <span class="text-[11px] font-medium text-mn-muted truncate max-w-full"><span class="dark:opacity-70">to pay</span> {{ debt.to.get_full_name|default:debt.to.username }}</span>
+                    </div>
+
+                    <!-- Amount section -->
+                    <div class="flex flex-col items-end justify-center pl-2">
+                        <span class="text-[14px] font-black text-mn-text dark:text-mn-text-dark leading-none tracking-tight">{{ currency_symbol|default:'₹' }} {{ debt.amount|floatformat:2|intcomma }}</span>
+                    </div>
+
+                </div>
+
+                {% if debt.from == request.user or debt.to == request.user or request.user == group.created_by %}
+                <div class="flex flex-col gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-white/5">
+                    
+                    {% if debt.to == request.user %}
+                    <div class="flex items-center gap-2 w-full">
+                        <a href="{% url 'split_expense:reminder_confirm' group.id %}?user_id={{ debt.from.id }}&amount_owed={{ currency_symbol|default:'₹' }}{{ debt.amount|floatformat:2|intcomma }}" class="remind-btn flex-1 h-9 rounded-[10px] bg-mn-accent text-mn-dark flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform font-bold text-xs whitespace-nowrap overflow-hidden" title="Email Reminder">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">mail</span> <span>Remind</span>
+                        </a>
+                        <button type="button" onclick="shareReminder('{{ debt.from.get_full_name|default:debt.from.username|escapejs }}', '{{ currency_symbol|default:'₹' }}{{ debt.amount|floatformat:2|intcomma }}', '{{ group.name|escapejs }}')" class="flex-1 h-9 rounded-[10px] bg-mn-accent text-mn-dark flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform font-bold text-xs whitespace-nowrap overflow-hidden" title="Share">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">share</span> <span>Share</span>
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    {% if debt.from == request.user or request.user == group.created_by %}
+                    <a href="{% url 'split_expense:settlement_confirm' group.id %}?paid_by={{ debt.from.id }}&paid_to={{ debt.to.id }}&amount={{ debt.amount }}" class="w-full h-9 rounded-[10px] bg-mn-accent text-mn-dark text-[12px] font-bold tracking-wide shadow-sm active:scale-95 transition-transform focus:outline-none flex items-center justify-center gap-1.5 focus:ring-4 focus:ring-mn-accent/30 whitespace-nowrap overflow-hidden">
+                        Mark as Settled
+                    </a>
+                    {% endif %}
+
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-12 text-mn-muted">
+                <span class="material-symbols-outlined mb-2" style="font-size:48px;">sentiment_satisfied</span>
+                <p>All members are settled up!</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // No specific initializers needed for now
+    });
+
+    function switchTab(tabId) {
+        // hide all
+        ['expenses', 'balances', 'debts'].forEach(id => {
+            document.getElementById('tab-' + id).classList.add('hidden');
+            let btn = document.getElementById('btn-' + id);
+            btn.classList.remove('bg-mn-bg', 'dark:bg-mn-dark', 'text-mn-text', 'dark:text-mn-text-dark');
+            btn.classList.add('text-mn-muted');
+        });
+        
+        // show requested
+        document.getElementById('tab-' + tabId).classList.remove('hidden');
+        let activeBtn = document.getElementById('btn-' + tabId);
+        activeBtn.classList.remove('text-mn-muted');
+        activeBtn.classList.add('bg-mn-bg', 'dark:bg-mn-dark', 'text-mn-text', 'dark:text-mn-text-dark');
+    }
+
+    async function shareReminder(name, amount, groupName) {
+        const text = `Hi ${name}, just a friendly reminder that you have an outstanding balance of ${amount} for our group '${groupName}'.\n\nYou can easily settle up on Espere: ${window.location.origin}`;
+        
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Espere Payment Reminder',
+                    text: text,
+                    url: window.location.origin
+                });
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error("Share failed:", err);
+                    copyToClipboard(text);
+                }
+            }
+        } else {
+            copyToClipboard(text);
+        }
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Reminder copied to clipboard! You can now paste it in WhatsApp or SMS.");
+        }).catch(err => {
+            console.error("Failed to copy text: ", err);
+            prompt("Share API not supported. Please copy this text manually:", text);
+        });
+    }
+</script>
+{% endblock %}

@@ -281,6 +281,10 @@
                 <span class="material-symbols-outlined icon-md">category</span>
                 <span>Categories</span>
             </a>
+            <a href="{% url 'split_expense:group_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium transition-all duration-200 {% active_nav request '^/groups' %}" id="sidenav-groups">
+                <span class="material-symbols-outlined icon-md">groups</span>
+                <span>Split Groups</span>
+            </a>
         </nav>
 
         <!-- Bottom section -->
@@ -379,7 +383,7 @@
 
         <!-- ===== FLOATING MOBILE BOTTOM NAV (< lg) ===== -->
         {% if request.user.is_authenticated %}
-        {% if request.path == '/' or request.path == '/transactions/' or request.path == '/budgets/' or request.path == '/reports/' or request.path == '/savings/' %}
+        {% if request.path == '/' or request.path == '/transactions/' or request.path == '/budgets/' or request.path == '/reports/' or request.path == '/savings/' or '/groups/' in request.path %}
 
         <nav id="bottom-nav" class="fixed bottom-4 left-4 right-4 lg:hidden z-50 transition-transform duration-500">
             <div class="bg-mn-dark dark:bg-mn-card-dark rounded-[28px] px-3 py-3 flex items-center justify-evenly" style="box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.12);">
@@ -392,11 +396,11 @@
                 <a href="{% url 'transactions:budget_list' %}" class="w-11 h-11 flex items-center justify-center rounded-full transition-all {% active_nav request '^/budgets' 'bg-mn-accent text-mn-dark' 'text-gray-400 hover:text-gray-300' %}" id="nav-budgets">
                     <span class="material-symbols-outlined text-[22px]">wallet</span>
                 </a>
-                <a href="{% url 'reports:reports' %}" class="w-11 h-11 flex items-center justify-center rounded-full transition-all {% active_nav request '^/reports' 'bg-mn-accent text-mn-dark' 'text-gray-400 hover:text-gray-300' %}" id="nav-reports">
-                    <span class="material-symbols-outlined text-[22px]">pie_chart</span>
-                </a>
                 <a href="{% url 'transactions:savings_list' %}" class="w-11 h-11 flex items-center justify-center rounded-full transition-all {% active_nav request '^/savings' 'bg-mn-accent text-mn-dark' 'text-gray-400 hover:text-gray-300' %}" id="nav-savings">
                     <span class="material-symbols-outlined text-[22px]">target</span>
+                </a>
+                <a href="{% url 'split_expense:group_list' %}" class="w-11 h-11 flex items-center justify-center rounded-full transition-all {% active_nav request '^/groups' 'bg-mn-accent text-mn-dark' 'text-gray-400 hover:text-gray-300' %}" id="nav-groups" title="Split Expenses">
+                    <span class="material-symbols-outlined text-[22px]">call_split</span>
                 </a>
             </div>
         </nav>

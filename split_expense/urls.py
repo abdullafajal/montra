@@ -1,0 +1,22 @@
+from django.urls import path
+from . import views
+
+app_name = 'split_expense'
+
+urlpatterns = [
+    path('', views.GroupListView.as_view(), name='group_list'),
+    path('setup/', views.GroupCreateView.as_view(), name='group_create'),
+    path('<int:pk>/', views.GroupDetailView.as_view(), name='group_detail'),
+    path('<int:group_id>/expense/add/', views.ExpenseCreateView.as_view(), name='expense_create'),
+    path('<int:group_id>/expense/<int:expense_id>/', views.ExpenseDetailView.as_view(), name='expense_detail'),
+    path('<int:group_id>/settle/confirm/', views.SettlementConfirmView.as_view(), name='settlement_confirm'),
+    path('<int:group_id>/remind/confirm/', views.ReminderConfirmView.as_view(), name='reminder_confirm'),
+    path('<int:group_id>/settle/', views.SettlementCreateView.as_view(), name='settlement_create'),
+    path('<int:group_id>/remind/', views.SendReminderView.as_view(), name='send_reminder'),
+    path('<int:group_id>/members/add/', views.GroupMemberAddView.as_view(), name='group_member_add'),
+    
+    path('invitations/', views.InvitationListView.as_view(), name='invitations'),
+    path('invite/<uuid:token>/', views.InvitationAcceptSpecialView.as_view(), name='invitation_special_link'),
+    path('<int:group_id>/invite/<str:action>/', views.InvitationActionView.as_view(), name='invitation_action'),
+    path('api/users/search/', views.UserSearchAPIView.as_view(), name='api_user_search'),
+]

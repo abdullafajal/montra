@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Invitations{% endblock %}
+
+{% block top_bar %}
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex flex-col gap-4 relative">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'split_expense:group_list' %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all lg:hidden">
+                <span class="material-symbols-outlined icon-md text-mn-text dark:text-mn-text-dark">arrow_back</span>
+            </a>
+            <div>
+                <h1 class="text-xl font-bold text-mn-text dark:text-mn-text-dark">Invitations</h1>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-4" data-aos="fade-up">
+
+    {% if invitations %}
+        {% for invite in invitations %}
+        <div class="mn-card p-5 relative overflow-hidden shadow-sm">
+            <div class="flex justify-between items-center mb-5">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-mn-dark flex items-center justify-center shadow-inner border border-white/5">
+                        <span class="material-symbols-outlined icon-md text-mn-accent">mail</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-mn-text dark:text-mn-text-dark">{{ invite.group.name }}</h3>
+                        <p class="text-xs text-mn-muted">Invited by <span class="font-semibold">{{ invite.group.created_by.username }}</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-white/5">
+                <form method="post" action="{% url 'split_expense:invitation_action' invite.group.id 'reject' %}" class="flex-1">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 font-medium"> Decline </button>
+                </form>
+                <form method="post" action="{% url 'split_expense:invitation_action' invite.group.id 'accept' %}" class="flex-1">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-mn-dark text-mn-accent font-bold shadow-soft flex justify-center items-center gap-2">
+                        <span class="material-symbols-outlined icon-sm">check</span>
+                        Accept 
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="mn-card p-10 flex flex-col items-center justify-center text-center mt-8">
+            <div class="w-20 h-20 bg-mn-bg dark:bg-mn-bg-dark rounded-full flex items-center justify-center mb-4">
+                <span class="material-symbols-outlined text-mn-muted" style="font-size:36px;">drafts</span>
+            </div>
+            <h3 class="text-lg font-bold text-mn-text dark:text-mn-text-dark">No pending invites</h3>
+            <p class="text-mn-muted mt-2">When someone adds you to a group, it will appear here.</p>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

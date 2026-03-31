@@ -11,6 +11,7 @@ urlpatterns = [
     path("", include("transactions.urls")),
     path("accounts/", include("accounts.urls")),
     path("reports/", include("reports.urls")),
+    path("groups/", include("split_expense.urls", namespace='split_expense')),
     path('', include('pwa.urls')),
 ]
 

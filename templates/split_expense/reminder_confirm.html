@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Confirm Reminder | Espere{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-12 px-4" data-aos="fade-up">
+    <div class="bg-white dark:bg-[#1A1A1A] rounded-[24px] p-6 shadow-soft border border-gray-100 dark:border-white/5 text-center w-full">
+        <!-- Icon -->
+        <div class="w-16 h-16 rounded-full bg-mn-accent/10 border border-mn-accent/20 flex items-center justify-center mx-auto mb-5 shadow-sm">
+            <span class="material-symbols-outlined text-mn-accent" style="font-size: 32px;">notifications_active</span>
+        </div>
+        
+        <h2 class="text-[22px] font-black text-mn-text dark:text-white tracking-tight mb-2">Send Reminder?</h2>
+        
+        <!-- Details Box -->
+        <div class="bg-mn-bg dark:bg-[#111111] border border-gray-100 dark:border-white/5 rounded-2xl p-4 my-6 text-left">
+            <div class="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-white/5 pb-3">
+                <span class="text-sm font-medium text-mn-muted dark:text-white/50">Amount Owed</span>
+                <span class="text-lg font-black text-mn-accent tracking-tight">{{ amount_owed }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-mn-muted dark:text-white/50 w-16">To:</span>
+                <span class="text-sm font-bold text-mn-text dark:text-white truncate max-w-[200px]">{{ user_to_remind.get_full_name|default:user_to_remind.username }}</span>
+            </div>
+        </div>
+
+        <p class="text-sm text-mn-muted dark:text-white/70 mb-8 px-2 font-medium">This will send a friendly email reminder to {{ user_to_remind.username }} about their outstanding balance.</p>
+        
+        <!-- Actions -->
+        <form method="post" action="{% url 'split_expense:send_reminder' group.id %}" class="flex flex-col gap-3">
+            {% csrf_token %}
+            <input type="hidden" name="user_id" value="{{ user_to_remind.id }}">
+            <input type="hidden" name="amount_owed" value="{{ amount_owed }}">
+            
+            <button type="submit" class="w-full h-[48px] bg-mn-accent text-mn-dark text-[14px] font-extrabold rounded-xl shadow-sm active:scale-95 transition-transform flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-mn-accent/30">
+                <span class="material-symbols-outlined" style="font-size: 20px;">mail</span> Send Email Now
+            </button>
+            <a href="{% url 'split_expense:group_detail' group.id %}" class="w-full h-[48px] bg-mn-bg dark:bg-[#111111] text-mn-text dark:text-white text-[14px] font-bold rounded-xl active:scale-95 transition-all border border-gray-100 dark:border-white/5 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-[#1a1a1a]">
+                Cancel
+            </a>
+        </form>
+        
+        <p class="text-[10px] text-mn-muted mt-4 uppercase tracking-widest font-bold">Note: 24h cooldown applies after sending</p>
+    </div>
+</div>
+{% endblock %}

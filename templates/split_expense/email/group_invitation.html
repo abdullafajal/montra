@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: 'Inter', Arial, sans-serif; background-color: #F5F5F5; margin: 0; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.04); border: 1px solid #EEEEEE;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="https://espere.in/images/icon-192.png" alt="Espere" style="width: 64px; height: 64px; border-radius: 16px; margin: 0 auto; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        </div>
+        
+        <h1 style="color: #1A1A1A; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 20px;">Group Invitation</h1>
+        
+        <p style="color: #1A1A1A; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            Hi there,
+        </p>
+        
+        <p style="color: #1A1A1A; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+            <strong>{{ inviter.username }}</strong> has invited you to join the group <strong style="color: #C8E64A; background-color: #1A1A1A; padding: 2px 8px; border-radius: 6px;">{{ group.name }}</strong> on Espere to help split shared expenses together!
+            <br><br>
+            By joining, you'll be able to see all shared bills, add your own expenses, and easily settle up your balances.
+        </p>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <a href="{{ invite_url }}" style="background-color: #1A1A1A; color: #C8E64A; padding: 14px 28px; text-decoration: none; border-radius: 16px; font-weight: bold; font-size: 16px; display: inline-block;">Join the Group</a>
+        </div>
+        
+        <p style="color: #1A1A1A; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+            If you do not have an account yet, you will be prompted to create one before joining the group.
+        </p>
+        
+        <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 30px 0;">
+        
+        <p style="color: #9E9E9E; font-size: 14px; text-align: center;">
+            If you don't know {{ inviter.username }}, you can safely ignore this email.
+        </p>
+    </div>
+</body>
+</html>

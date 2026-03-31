@@ -273,34 +273,48 @@
 </div>
 
 <!-- Quick Links -->
-<div class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 animate-fade-in stagger-4">
-    <a href="{% url 'transactions:budget_list' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft">
+<div class="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4 animate-fade-in stagger-4">
+    <a href="{% url 'transactions:budget_list' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft flex flex-col items-center text-center">
         <div class="w-10 h-10 bg-mn-accent rounded-xl flex items-center justify-center mb-2">
             <span class="material-symbols-outlined text-mn-dark icon-md">savings</span>
         </div>
         <p class="text-sm font-semibold text-mn-accent">Budgets</p>
-        <p class="text-xs text-white/50 mt-0.5">Set spending limits</p>
+        <p class="text-[11px] text-white/50 mt-0.5">Set spending limits</p>
     </a>
-    <a href="{% url 'transactions:savings_list' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft">
+    <a href="{% url 'transactions:savings_list' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft flex flex-col items-center text-center">
         <div class="w-10 h-10 bg-mn-accent rounded-xl flex items-center justify-center mb-2">
             <span class="material-symbols-outlined text-mn-dark icon-md">flag</span>
         </div>
         <p class="text-sm font-semibold text-mn-accent">Savings</p>
-        <p class="text-xs text-white/50 mt-0.5">Track your goals</p>
+        <p class="text-[11px] text-white/50 mt-0.5">Track your goals</p>
     </a>
-    <a href="{% url 'transactions:category_list' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft">
+    <a href="{% url 'transactions:category_list' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft flex flex-col items-center text-center">
         <div class="w-10 h-10 bg-mn-accent rounded-xl flex items-center justify-center mb-2">
             <span class="material-symbols-outlined text-mn-dark icon-md">category</span>
         </div>
         <p class="text-sm font-semibold text-mn-accent">Categories</p>
-        <p class="text-xs text-white/50 mt-0.5">Organize spending</p>
+        <p class="text-[11px] text-white/50 mt-0.5">Organize spending</p>
     </a>
-    <a href="{% url 'reports:export_csv' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft">
+    <a href="{% url 'reports:reports' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft flex flex-col items-center text-center">
+        <div class="w-10 h-10 bg-mn-accent rounded-xl flex items-center justify-center mb-2">
+            <span class="material-symbols-outlined text-mn-dark icon-md">pie_chart</span>
+        </div>
+        <p class="text-sm font-semibold text-mn-accent">Reports</p>
+        <p class="text-[11px] text-white/50 mt-0.5">Analyze spending</p>
+    </a>
+    <a href="{% url 'split_expense:group_list' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft flex flex-col items-center text-center">
+        <div class="w-10 h-10 bg-mn-accent rounded-xl flex items-center justify-center mb-2">
+            <span class="material-symbols-outlined text-mn-dark icon-md">groups</span>
+        </div>
+        <p class="text-sm font-semibold text-mn-accent">Split Groups</p>
+        <p class="text-[11px] text-white/50 mt-0.5">Share expenses</p>
+    </a>
+    <a href="{% url 'reports:export_csv' %}" class="bg-mn-dark p-4 rounded-2xl hover:opacity-90 transition-all active:scale-[0.98] shadow-soft flex flex-col items-center text-center">
         <div class="w-10 h-10 bg-mn-accent rounded-xl flex items-center justify-center mb-2">
             <span class="material-symbols-outlined text-mn-dark icon-md">download</span>
         </div>
         <p class="text-sm font-semibold text-mn-accent">Export</p>
-        <p class="text-xs text-white/50 mt-0.5">Download CSV</p>
+        <p class="text-[11px] text-white/50 mt-0.5">Download CSV</p>
     </a>
 </div>
 {% endcache %}

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Add Expense - {{ group.name }}{% endblock %}
+
+{% block top_bar %}
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3 relative">
+    <a href="{% url 'split_expense:group_detail' group.id %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all">
+        <span class="material-symbols-outlined icon-md text-mn-text dark:text-mn-text-dark">arrow_back</span>
+    </a>
+    <h1 class="text-lg font-bold text-mn-text dark:text-mn-text-dark truncate">Add Expense</h1>
+    <span class="ml-auto px-3 py-1 bg-mn-card dark:bg-[#1A1A1A] border border-mn-border border-opacity-50 rounded-full text-xs font-semibold text-mn-muted truncate max-w-[120px]">
+        {{ group.name }}
+    </span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in max-w-lg mx-auto">
+    <form method="post" id="expense-form" action="{% url 'split_expense:expense_create' group.id %}" class="space-y-4">
+        {% csrf_token %}
+        
+        <div class="mn-card p-5 space-y-4">
+            <!-- Amount -->
+            <div class="text-center pb-2">
+                <label for="amount" class="block text-sm font-medium text-mn-text dark:text-mn-text-dark mb-1.5">Amount ({{ currency_symbol|default:"₹" }})</label>
+                <div class="relative flex items-center justify-center">
+                    <input type="number" step="0.01" min="0.01" name="amount" id="amount" required
+                           class="w-48 text-center text-4xl font-bold bg-transparent border-b-2 border-mn-border focus:border-mn-accent focus:ring-0 text-mn-text dark:text-mn-text-dark p-2 rounded-none transition-colors no-scrollbar mx-auto" placeholder="0.00" oninput="updateCalculations()">
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label for="description" class="block text-sm font-medium text-mn-text dark:text-mn-text-dark mb-1.5">Description</label>
+                <div class="relative">
+                    <input type="text" id="description" name="description" required placeholder="e.g. Dinner, Groceries" 
+                           class="w-full px-4 py-3 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-white/5 rounded-xl shadow-sm focus:ring-2 focus:ring-mn-accent focus:border-transparent transition-all outline-none text-mn-text dark:text-mn-text-dark font-medium placeholder-gray-400 dark:placeholder-gray-600">
+                </div>
+            </div>
+
+            <!-- Paid By -->
+            <div>
+                <label for="paid_by" class="block text-sm font-medium text-mn-text dark:text-mn-text-dark mb-1.5">Paid by</label>
+                <select id="paid_by" name="paid_by" class="w-full px-4 py-3 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-white/5 rounded-xl shadow-sm focus:ring-2 focus:ring-mn-accent focus:border-transparent transition-all outline-none text-mn-text dark:text-mn-text-dark font-medium appearance-none">
+                    {% for member in members %}
+                        <option value="{{ member.id }}" {% if member == request.user %}selected{% endif %}>
+                            {% if member == request.user %}You{% else %}{{ member.get_full_name|default:member.username }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Split Type Tabs -->
+            <div class="mt-2 border-t border-gray-100 dark:border-white/5 pt-4">
+                <label class="block text-sm font-medium text-mn-text dark:text-mn-text-dark mb-2">Split Options</label>
+                
+                <input type="hidden" name="split_type" id="split_type" value="equal">
+                
+                <div class="flex bg-mn-bg dark:bg-mn-dark rounded-xl p-1 shadow-inner mb-4 border border-mn-border dark:border-mn-border-dark">
+                    <button type="button" onclick="setSplitType('equal')" id="btn-equal" class="flex-1 py-1.5 text-sm font-bold rounded-lg bg-mn-card dark:bg-[#2A2A2A] text-mn-text dark:text-mn-text-dark shadow-sm transition-all">Equal</button>
+                    <button type="button" onclick="setSplitType('exact')" id="btn-exact" class="flex-1 py-1.5 text-sm font-semibold rounded-lg text-mn-muted hover:text-mn-text dark:hover:text-mn-text-dark transition-all">Exact</button>
+                    <button type="button" onclick="setSplitType('percentage')" id="btn-percentage" class="flex-1 py-1.5 text-sm font-semibold rounded-lg text-mn-muted hover:text-mn-text dark:hover:text-mn-text-dark transition-all">Percent</button>
+                </div>
+
+                <!-- Equal Message -->
+                <div id="section-equal" class="text-center py-2 text-mn-muted text-sm">
+                    Split equally among <span class="font-bold text-mn-text dark:text-mn-text-dark">{{ members.count }}</span> members.
+                    <br><span id="equal-amount" class="font-bold text-mn-accent mt-1 block tracking-wide">{{ currency_symbol|default:"₹" }} 0.00 / person</span>
+                </div>
+
+                <!-- Exact & Percentage Inputs -->
+                <div id="section-custom" class="hidden space-y-2">
+                    {% for member in members %}
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-mn-bg dark:bg-mn-dark border border-transparent">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-mn-card dark:bg-mn-card-dark border-mn-border flex items-center justify-center font-bold text-xs text-mn-muted"><span class="material-symbols-outlined icon-sm">person</span></div>
+                            <span class="font-medium text-sm">{% if member == request.user %}You{% else %}{{ member.get_full_name|default:member.username }}{% endif %}</span>
+                        </div>
+                        <div class="relative w-28">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-mn-muted font-bold text-sm custom-prefix">{{ currency_symbol|default:"₹" }}</span>
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-mn-muted font-bold text-sm custom-suffix hidden">%</span>
+                            <input type="number" step="0.01" min="0" name="split_val_{{ member.id }}" id="split_val_{{ member.id }}" placeholder="0" oninput="updateCalculations()"
+                                   class="split-input w-full pl-7 pr-3 py-1.5 rounded-lg bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-white/5 focus:border-mn-accent focus:ring-0 text-right text-sm font-bold shadow-sm">
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="flex justify-between items-center px-1 pt-2 text-sm">
+                        <span class="text-mn-muted font-medium">Allocated:</span>
+                        <span id="custom-total" class="font-bold text-mn-text dark:text-mn-text-dark">0.00</span>
+                    </div>
+                </div>
+                <div id="custom-error" class="text-expense-dark text-xs text-center hidden font-medium mt-2 bg-expense-light/50 py-2 rounded-lg"></div>
+            </div>
+        </div>
+
+        <button type="submit" id="submit-btn" class="w-full py-3.5 bg-mn-dark text-mn-accent font-semibold rounded-2xl transition-all duration-200 active:scale-[0.98] shadow-soft hover:opacity-90 flex justify-center items-center gap-2">
+            Save Expense
+        </button>
+    </form>
+</div>
+
+<script>
+    const amountInput = document.getElementById('amount');
+    const splitTypeInput = document.getElementById('split_type');
+    const submitBtn = document.getElementById('submit-btn');
+    const memberCount = parseInt("{{ members.count }}");
+    const amountLine = document.getElementById('amount-line');
+    const currSym = '{{ currency_symbol|default:"₹"|escapejs }}';
+    
+    // Focus amount styling
+    amountInput.addEventListener('focus', () => amountLine.classList.add('bg-mn-accent', 'dark:bg-mn-accent'));
+    amountInput.addEventListener('blur', () => amountLine.classList.remove('bg-mn-accent', 'dark:bg-mn-accent'));
+
+    function setSplitType(type) {
+        splitTypeInput.value = type;
+        
+        // Update Buttons
+        ['equal', 'exact', 'percentage'].forEach(t => {
+            let btn = document.getElementById('btn-' + t);
+            if(t === type) {
+                btn.classList.add('bg-mn-card', 'dark:bg-[#2A2A2A]', 'text-mn-text', 'dark:text-mn-text-dark', 'shadow-sm', 'font-bold');
+                btn.classList.remove('text-mn-muted', 'font-semibold');
+            } else {
+                btn.classList.remove('bg-mn-card', 'dark:bg-[#2A2A2A]', 'text-mn-text', 'dark:text-mn-text-dark', 'shadow-sm', 'font-bold');
+                btn.classList.add('text-mn-muted', 'font-semibold');
+            }
+        });
+
+        // Toggle Sections
+        if(type === 'equal') {
+            document.getElementById('section-equal').classList.remove('hidden');
+            document.getElementById('section-custom').classList.add('hidden');
+        } else {
+            document.getElementById('section-equal').classList.add('hidden');
+            document.getElementById('section-custom').classList.remove('hidden');
+            
+            // Toggle prefix/suffix
+            document.querySelectorAll('.custom-prefix').forEach(el => el.classList.toggle('hidden', type === 'percentage'));
+            document.querySelectorAll('.custom-suffix').forEach(el => el.classList.toggle('hidden', type === 'exact'));
+            
+            // Adjust input padding based on prefix/suffix
+            document.querySelectorAll('.split-input').forEach(el => {
+                if(type === 'percentage') {
+                    el.classList.replace('pl-7', 'pl-3');
+                    el.classList.replace('pr-3', 'pr-7');
+                } else {
+                    el.classList.replace('pl-3', 'pl-7');
+                    el.classList.replace('pr-7', 'pr-3');
+                }
+            });
+        }
+        updateCalculations();
+    }
+
+    function updateCalculations() {
+        const amount = parseFloat(amountInput.value) || 0;
+        const type = splitTypeInput.value;
+        const errorEl = document.getElementById('custom-error');
+        
+        if(type === 'equal') {
+            const perPerson = memberCount > 0 ? (amount / memberCount) : 0;
+            document.getElementById('equal-amount').innerText = `${currSym} ${perPerson.toFixed(2)} / person`;
+            submitBtn.disabled = amount <= 0;
+            submitBtn.classList.toggle('opacity-50', amount <= 0);
+            return;
+        }
+
+        let total = 0;
+        document.querySelectorAll('.split-input').forEach(input => {
+            total += parseFloat(input.value) || 0;
+        });
+
+        const totalStr = type === 'percentage' ? `${total.toFixed(2)}%` : `${currSym} ${total.toFixed(2)}`;
+        document.getElementById('custom-total').innerText = totalStr;
+
+        let isValid = false;
+        if(amount <= 0) {
+            errorEl.innerText = "Please enter a valid expense amount first.";
+            errorEl.classList.remove('hidden');
+        } else if(type === 'exact' && Math.abs(total - amount) > 0.01) {
+            errorEl.innerText = `Total must equal ${currSym} ${amount.toFixed(2)} (currently off by ${currSym} ${Math.abs(amount-total).toFixed(2)})`;
+            errorEl.classList.remove('hidden');
+        } else if(type === 'percentage' && Math.abs(total - 100) > 0.01) {
+            errorEl.innerText = `Total percentage must equal 100% (currently ${total.toFixed(2)}%)`;
+            errorEl.classList.remove('hidden');
+        } else {
+            errorEl.classList.add('hidden');
+            isValid = true;
+        }
+
+        submitBtn.disabled = !isValid;
+        submitBtn.classList.toggle('opacity-50', !isValid);
+    }
+</script>
+{% endblock %}

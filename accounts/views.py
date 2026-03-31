@@ -72,7 +72,12 @@ class RegisterView(View):
     def get(self, request):
         if request.user.is_authenticated:
             return redirect("/")
-        return render(request, "accounts/register.html", {"form": RegisterForm()})
+            
+        initial_data = {}
+        if 'invite_email' in request.session:
+            initial_data['email'] = request.session['invite_email']
+            
+        return render(request, "accounts/register.html", {"form": RegisterForm(initial=initial_data)})
 
     def post(self, request):
         form = RegisterForm(request.POST)
@@ -98,6 +103,27 @@ class VerifyEmailView(View):
         verification.delete()
         # Auto-login after verification
         login(request, user, backend='accounts.backends.EmailOrUsernameModelBackend')
+        
+        # Check and process any pending split group invitations for this email
+        try:
+            from split_expense.models import GroupInvitation, GroupMember
+            invitations = GroupInvitation.objects.filter(email__iexact=user.email)
+            count = 0
+            for inv in invitations:
+                GroupMember.objects.get_or_create(
+                    group=inv.group, 
+                    user=user, 
+                    defaults={'is_accepted': True}
+                )
+                inv.delete()
+                count += 1
+                
+            if count > 0:
+                messages.success(request, f"Email verified! You automatically joined {count} group(s) you were invited to.")
+                return redirect("split_expense:group_list")
+        except Exception as e:
+            print(f"Error processing group invitations: {e}")
+            
         messages.success(request, "Email verified successfully! Welcome to Espere.")
         return redirect("/")
 

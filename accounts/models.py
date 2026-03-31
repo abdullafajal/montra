@@ -35,13 +35,13 @@ class UserProfile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
-    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default="USD")
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default="INR")
     theme = models.CharField(max_length=5, choices=THEME_CHOICES, default="light")
     email_reminders = models.BooleanField(default=True, help_text="Receive daily reminders to log expenses.")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def get_currency_symbol(self):
-        return self.CURRENCY_SYMBOLS.get(self.currency, "$")
+        return self.CURRENCY_SYMBOLS.get(self.currency, "₹")
 
     def __str__(self):
         return f"{self.user.username}'s Profile"

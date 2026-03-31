@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Expense Details - {{ group.name }}{% endblock %}
+
+{% block top_bar %}
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3">
+    <a href="{% url 'split_expense:group_detail' group.id %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all">
+        <span class="material-symbols-outlined icon-md text-mn-text dark:text-mn-text-dark">arrow_back</span>
+    </a>
+    <h1 class="text-lg font-bold text-mn-text dark:text-mn-text-dark">Expense Details</h1>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in max-w-lg mx-auto">
+    
+    <!-- Main Expense Card -->
+    <div class="bg-mn-dark text-white rounded-3xl p-5 overflow-hidden relative shadow-elevated border border-white/5 mb-4">
+        <!-- Subtle gradient backdrops -->
+        <div class="absolute top-0 right-0 w-32 h-32 bg-mn-accent rounded-full opacity-[0.03] blur-3xl pointer-events-none"></div>
+
+        <div class="flex items-center gap-4 relative z-10 w-full mb-4 mt-1">
+            <div class="w-12 h-12 bg-mn-accent/10 rounded-[14px] flex items-center justify-center shadow-inner border border-mn-accent/20 flex-shrink-0">
+                <span class="material-symbols-outlined text-mn-accent drop-shadow-sm" style="font-size: 24px;">receipt_long</span>
+            </div>
+            
+            <div class="flex-1 min-w-0 flex flex-col justify-center">
+                <h2 class="text-sm font-semibold text-white/70 mb-0.5 tracking-wide truncate">{{ expense.description }}</h2>
+                <div class="text-2xl font-black text-mn-accent tracking-tight flex items-baseline gap-0.5 truncate select-all">
+                    <span class="text-lg text-mn-accent font-bold">{{ currency_symbol|default:"₹" }}</span>{{ expense.amount|floatformat:2|intcomma }}
+                </div>
+            </div>
+            
+            <div class="flex-shrink-0 flex flex-col items-end justify-center">
+                <div class="inline-flex items-center gap-1 bg-white/5 text-white/60 text-[10px] uppercase font-bold tracking-widest rounded-md px-2 py-1 mb-2 shadow-sm border border-white/5">
+                    {{ expense.date|date:"j M" }}
+                </div>
+                <span class="px-2 py-0.5 bg-mn-accent/10 text-mn-accent text-[9px] font-bold rounded border border-mn-accent/20 uppercase tracking-widest">{{ expense.split_type }}</span>
+            </div>
+        </div>
+
+        <div class="pt-3 border-t border-white/10 flex justify-between items-center relative z-10 w-full">
+            <div class="flex items-center gap-2">
+                <span class="text-[9px] uppercase font-bold text-white/40 tracking-wider">Paid by</span>
+                <span class="font-bold text-white text-xs truncate max-w-[120px]">{{ expense.paid_by.get_full_name|default:expense.paid_by.username }}</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <span class="text-[9px] uppercase font-bold text-white/40 tracking-wider">Group</span>
+                <span class="font-semibold text-white/90 text-xs truncate max-w-[90px]">{{ group.name }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Splits List -->
+    <div class="mt-6">
+        <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark mb-3 px-1 flex items-center gap-2">
+            <span class="material-symbols-outlined icon-sm text-mn-muted">pie_chart</span>
+            How it was split
+        </h3>
+        <div class="space-y-2">
+            {% for split in splits %}
+            <div class="mn-card p-4 flex items-center gap-3.5 hover:shadow-elevated transition-all">
+                <div class="w-11 h-11 bg-mn-accent rounded-xl flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-mn-dark" style="font-size: 22px;">person</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm font-semibold text-mn-text dark:text-mn-text-dark truncate">
+                        {% if split.user == request.user %}You{% else %}{{ split.user.get_full_name|default:split.user.username }}{% endif %}
+                    </h3>
+                    <p class="text-xs text-mn-muted dark:text-mn-muted-dark mt-0.5 truncate">
+                        {% if split.user == expense.paid_by %}
+                            Paid this expense
+                        {% else %}
+                            To pay {{ expense.paid_by.get_full_name|default:expense.paid_by.username }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold {% if split.user == expense.paid_by and splits.count > 1 %}opacity-60 text-mn-muted{% else %}text-mn-text dark:text-mn-text-dark{% endif %}">
+                        {{ currency_symbol|default:"₹" }} {{ split.amount_owed|floatformat:2|intcomma }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
