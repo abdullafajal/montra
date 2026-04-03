@@ -4,15 +4,88 @@
 {% block title %}Expense Details - {{ group.name }}{% endblock %}
 
 {% block top_bar %}
+<!-- Header Skeleton -->
+<div data-skeleton class="animate-pulse px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark"></div>
+    <div class="w-32 h-5 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+</div>
+<!-- Header Content -->
+<div data-content class="hidden">
 <div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3">
     <a href="{% url 'split_expense:group_detail' group.id %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all">
         <span class="material-symbols-outlined icon-md text-mn-text dark:text-mn-text-dark">arrow_back</span>
     </a>
     <h1 class="text-lg font-bold text-mn-text dark:text-mn-text-dark">Expense Details</h1>
 </div>
+</div>
 {% endblock %}
 
 {% block content %}
+
+<!-- SKELETON LOADER -->
+<div data-skeleton class="animate-pulse max-w-lg mx-auto">
+    <!-- Main Expense Card Skeleton -->
+    <div class="bg-mn-card dark:bg-mn-card-dark rounded-3xl p-5 border border-mn-border dark:border-mn-border-dark mb-4">
+        <div class="flex items-center gap-4 mb-4 mt-1">
+            <div class="w-12 h-12 rounded-[14px] bg-mn-border dark:bg-mn-border-dark flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+                <div class="w-28 h-3 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+                <div class="w-36 h-7 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+                <div class="w-14 h-5 bg-mn-border dark:bg-mn-border-dark rounded-md"></div>
+                <div class="w-16 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+        </div>
+        <div class="pt-3 border-t border-mn-border dark:border-mn-border-dark flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-12 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-20 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-16 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Splits Section Skeleton -->
+    <div class="mt-6">
+        <div class="flex items-center gap-2 mb-3 px-1">
+            <div class="w-4 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            <div class="w-28 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+        </div>
+        <div class="space-y-2">
+            <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-4 flex items-center gap-3.5 border border-mn-border dark:border-mn-border-dark">
+                <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                    <div class="w-16 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-1.5"></div>
+                    <div class="w-28 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                </div>
+                <div class="w-16 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-4 flex items-center gap-3.5 border border-mn-border dark:border-mn-border-dark">
+                <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                    <div class="w-20 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-1.5"></div>
+                    <div class="w-32 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                </div>
+                <div class="w-14 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-4 flex items-center gap-3.5 border border-mn-border dark:border-mn-border-dark">
+                <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                    <div class="w-12 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-1.5"></div>
+                    <div class="w-24 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                </div>
+                <div class="w-16 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTUAL CONTENT -->
+<div data-content class="hidden">
 <div class="animate-fade-in max-w-lg mx-auto">
     
     <!-- Main Expense Card -->
@@ -87,5 +160,6 @@
         </div>
     </div>
 
+</div>
 </div>
 {% endblock %}

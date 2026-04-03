@@ -3,6 +3,13 @@
 {% block title %}Pending Invitations{% endblock %}
 
 {% block top_bar %}
+<!-- Header Skeleton -->
+<div data-skeleton class="animate-pulse px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark lg:hidden"></div>
+    <div class="w-28 h-6 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+</div>
+<!-- Header Content -->
+<div data-content class="hidden">
 <div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex flex-col gap-4 relative">
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -15,9 +22,47 @@
         </div>
     </div>
 </div>
+</div>
 {% endblock %}
 
 {% block content %}
+
+<!-- SKELETON LOADER -->
+<div data-skeleton class="animate-pulse">
+    <div class="space-y-4">
+        <!-- Invitation Card Skeleton 1 -->
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-5 border border-mn-border dark:border-mn-border-dark">
+            <div class="flex items-center gap-4 mb-5">
+                <div class="w-12 h-12 rounded-2xl bg-mn-border dark:bg-mn-border-dark"></div>
+                <div>
+                    <div class="w-28 h-5 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+                    <div class="w-36 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 pt-4 border-t border-mn-border dark:border-mn-border-dark">
+                <div class="flex-1 h-10 bg-mn-border dark:bg-mn-border-dark rounded-xl"></div>
+                <div class="flex-1 h-10 bg-mn-border dark:bg-mn-border-dark rounded-xl"></div>
+            </div>
+        </div>
+        <!-- Invitation Card Skeleton 2 -->
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-5 border border-mn-border dark:border-mn-border-dark">
+            <div class="flex items-center gap-4 mb-5">
+                <div class="w-12 h-12 rounded-2xl bg-mn-border dark:bg-mn-border-dark"></div>
+                <div>
+                    <div class="w-32 h-5 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+                    <div class="w-28 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 pt-4 border-t border-mn-border dark:border-mn-border-dark">
+                <div class="flex-1 h-10 bg-mn-border dark:bg-mn-border-dark rounded-xl"></div>
+                <div class="flex-1 h-10 bg-mn-border dark:bg-mn-border-dark rounded-xl"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTUAL CONTENT -->
+<div data-content class="hidden">
 <div class="space-y-4" data-aos="fade-up">
 
     {% if invitations %}
@@ -60,5 +105,6 @@
         </div>
     {% endif %}
 
+</div>
 </div>
 {% endblock %}

@@ -4,6 +4,33 @@
 {% block title %}{{ group.name }} - Splitwise{% endblock %}
 
 {% block top_bar %}
+<!-- Header Skeleton -->
+<div data-skeleton class="animate-pulse px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex flex-col gap-4 relative">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark"></div>
+            <div class="w-32 h-6 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark"></div>
+    </div>
+    <!-- Balance Card Skeleton -->
+    <div class="relative mt-2 z-20">
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-3xl p-6 border border-mn-border dark:border-mn-border-dark">
+            <div class="w-24 h-3 bg-mn-border dark:bg-mn-border-dark rounded mb-3"></div>
+            <div class="w-48 h-9 bg-mn-border dark:bg-mn-border-dark rounded mb-4"></div>
+            <div class="flex items-center gap-4 mb-4">
+                <div class="flex items-center gap-1.5"><div class="w-6 h-6 rounded-full bg-mn-border dark:bg-mn-border-dark"></div><div class="w-20 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div></div>
+                <div class="flex items-center gap-1.5"><div class="w-6 h-6 rounded-full bg-mn-border dark:bg-mn-border-dark"></div><div class="w-20 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="h-11 bg-mn-border dark:bg-mn-border-dark rounded-2xl"></div>
+                <div class="h-11 bg-mn-border dark:bg-mn-border-dark rounded-2xl"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Header Content -->
+<div data-content class="hidden">
 <div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex flex-col gap-4 relative">
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -67,9 +94,51 @@
     </div>
     {% endif %}
 </div>
+</div>
 {% endblock %}
 
 {% block content %}
+
+<!-- SKELETON LOADER -->
+<div data-skeleton class="animate-pulse">
+    <!-- Tab Navigation Skeleton -->
+    <div class="flex bg-mn-card dark:bg-mn-card-dark rounded-2xl p-1 shadow-soft mb-6">
+        <div class="flex-1 py-2 flex justify-center"><div class="w-16 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div></div>
+        <div class="flex-1 py-2 flex justify-center"><div class="w-16 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div></div>
+        <div class="flex-1 py-2 flex justify-center"><div class="w-16 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div></div>
+    </div>
+
+    <!-- Expense List Items Skeleton -->
+    <div class="space-y-4">
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-4 flex items-center gap-3.5 border border-mn-border dark:border-mn-border-dark">
+            <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+                <div class="w-32 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+                <div class="w-40 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="w-16 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+        </div>
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-4 flex items-center gap-3.5 border border-mn-border dark:border-mn-border-dark">
+            <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+                <div class="w-28 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+                <div class="w-36 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="w-20 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+        </div>
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-4 flex items-center gap-3.5 border border-mn-border dark:border-mn-border-dark">
+            <div class="w-11 h-11 rounded-xl bg-mn-border dark:bg-mn-border-dark flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+                <div class="w-36 h-4 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+                <div class="w-32 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="w-16 h-4 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTUAL CONTENT -->
+<div data-content class="hidden">
 <div class="space-y-6" data-aos="fade-up">
 
     <!-- Tab Navigation -->
@@ -230,6 +299,7 @@
         {% endif %}
     </div>
 
+</div>
 </div>
 
 <script>

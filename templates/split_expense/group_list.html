@@ -4,6 +4,16 @@
 {% block title %}Split Groups{% endblock %}
 
 {% block top_bar %}
+<!-- Header Skeleton -->
+<div data-skeleton class="animate-pulse px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark lg:hidden"></div>
+        <div class="w-28 h-6 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+    </div>
+    <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark"></div>
+</div>
+<!-- Header Content -->
+<div data-content class="hidden">
 <div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
     <div class="flex items-center gap-3">
         <a href="{% url 'transactions:dashboard' %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all lg:hidden">
@@ -16,9 +26,68 @@
         <span class="hidden lg:inline text-sm font-semibold text-mn-dark">New Group</span>
     </a>
 </div>
+</div>
 {% endblock %}
 
 {% block content %}
+
+<!-- SKELETON LOADER -->
+<div data-skeleton class="animate-pulse">
+    <!-- Group Cards Grid Skeleton -->
+    <div class="grid gap-4 sm:grid-cols-2">
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-5 border border-mn-border dark:border-mn-border-dark">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-mn-border dark:bg-mn-border-dark"></div>
+                <div class="w-12 h-6 rounded-lg bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+            <div class="w-32 h-5 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+            <div class="w-24 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            <div class="mt-4 pt-3 border-t border-mn-border dark:border-mn-border-dark flex items-center justify-between">
+                <div class="w-40 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-6 h-6 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+        </div>
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-5 border border-mn-border dark:border-mn-border-dark">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-mn-border dark:bg-mn-border-dark"></div>
+                <div class="w-12 h-6 rounded-lg bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+            <div class="w-28 h-5 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+            <div class="w-20 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            <div class="mt-4 pt-3 border-t border-mn-border dark:border-mn-border-dark flex items-center justify-between">
+                <div class="w-36 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-6 h-6 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+        </div>
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-5 border border-mn-border dark:border-mn-border-dark sm:block hidden">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-mn-border dark:bg-mn-border-dark"></div>
+                <div class="w-12 h-6 rounded-lg bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+            <div class="w-36 h-5 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+            <div class="w-20 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            <div class="mt-4 pt-3 border-t border-mn-border dark:border-mn-border-dark flex items-center justify-between">
+                <div class="w-32 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-6 h-6 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+        </div>
+        <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-5 border border-mn-border dark:border-mn-border-dark sm:block hidden">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-mn-border dark:bg-mn-border-dark"></div>
+                <div class="w-12 h-6 rounded-lg bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+            <div class="w-24 h-5 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+            <div class="w-16 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            <div class="mt-4 pt-3 border-t border-mn-border dark:border-mn-border-dark flex items-center justify-between">
+                <div class="w-40 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-6 h-6 rounded-full bg-mn-border dark:bg-mn-border-dark"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTUAL CONTENT -->
+<div data-content class="hidden">
 <div class="space-y-4" data-aos="fade-up">
 
     {% if pending_invites > 0 %}
@@ -90,5 +159,6 @@
         </div>
     {% endif %}
 
+</div>
 </div>
 {% endblock %}
