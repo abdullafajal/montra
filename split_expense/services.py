@@ -1,7 +1,7 @@
 from decimal import Decimal
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from .models import Group, GroupMember, Expense, ExpenseSplit, Settlement
+from .models import Group, GroupMember, Expense, ExpenseSplit, Settlement, GroupInvitation
 
 @transaction.atomic
 def create_expense(group, paid_by, amount, description, split_type, splits_data=None):
@@ -181,3 +181,86 @@ def create_settlement(group, paid_by, paid_to, amount):
     receiver_ledger.save(update_fields=['total_owed', 'net_balance'])
     
     return settlement
+
+@transaction.atomic
+def delete_expense(expense):
+    """
+    Reverses the ledger impact of an expense and deletes it.
+    """
+    group = expense.group
+    amount = expense.amount
+    
+    # 1. Reverse the payer's total_paid and net_balance
+    payer_ledger = GroupMember.objects.get(group=group, user=expense.paid_by)
+    payer_ledger.total_paid -= amount
+    payer_ledger.net_balance -= amount
+    payer_ledger.save(update_fields=['total_paid', 'net_balance'])
+    
+    # 2. Reverse each split's impact on total_owed and net_balance
+    for split in expense.splits.select_related('user'):
+        member_ledger = GroupMember.objects.get(group=group, user=split.user)
+        member_ledger.total_owed -= split.amount_owed
+        member_ledger.net_balance += split.amount_owed
+        member_ledger.save(update_fields=['total_owed', 'net_balance'])
+    
+    # 3. Delete the expense (cascades to ExpenseSplit)
+    expense.delete()
+
+@transaction.atomic
+def update_expense(expense, paid_by, amount, description, split_type, splits_data=None):
+    """
+    Updates an expense by reversing the old ledger impact and creating a new one.
+    Returns the new expense object.
+    """
+    group = expense.group
+    
+    # 1. Reverse the old expense's ledger impact
+    old_amount = expense.amount
+    
+    payer_ledger = GroupMember.objects.get(group=group, user=expense.paid_by)
+    payer_ledger.total_paid -= old_amount
+    payer_ledger.net_balance -= old_amount
+    payer_ledger.save(update_fields=['total_paid', 'net_balance'])
+    
+    for split in expense.splits.select_related('user'):
+        member_ledger = GroupMember.objects.get(group=group, user=split.user)
+        member_ledger.total_owed -= split.amount_owed
+        member_ledger.net_balance += split.amount_owed
+        member_ledger.save(update_fields=['total_owed', 'net_balance'])
+    
+    # 2. Delete the old expense
+    expense.delete()
+    
+    # 3. Create the new expense using the existing service function
+    return create_expense(
+        group=group,
+        paid_by=paid_by,
+        amount=amount,
+        description=description,
+        split_type=split_type,
+        splits_data=splits_data
+    )
+
+@transaction.atomic
+def remove_member(group, user):
+    """
+    Removes a member from a group. Only allowed if their net balance is zero.
+    """
+    try:
+        member = GroupMember.objects.get(group=group, user=user)
+    except GroupMember.DoesNotExist:
+        raise ValidationError("User is not a member of this group.")
+    
+    if member.net_balance != Decimal('0'):
+        raise ValidationError(
+            f"{user.get_full_name() or user.username} has an unsettled balance of "
+            f"{member.net_balance}. Please settle all debts before removing."
+        )
+    
+    # Delete the membership
+    member.delete()
+    
+    # Also remove any pending invitation for this user's email
+    if user.email:
+        GroupInvitation.objects.filter(group=group, email=user.email).delete()
+

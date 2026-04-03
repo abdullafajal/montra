@@ -11,10 +11,10 @@
 <!-- Header Content -->
 <div data-content class="hidden">
 <div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3">
-    <a href="{% url 'split_expense:group_list' %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all">
+    <a href="{% if is_edit %}{% url 'split_expense:group_detail' group.id %}{% else %}{% url 'split_expense:group_list' %}{% endif %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all">
         <span class="material-symbols-outlined icon-md text-mn-text dark:text-mn-text-dark">arrow_back</span>
     </a>
-    <h1 class="text-lg font-bold text-mn-text dark:text-mn-text-dark">New Group</h1>
+    <h1 class="text-lg font-bold text-mn-text dark:text-mn-text-dark">{% if is_edit %}Edit Group{% else %}New Group{% endif %}</h1>
 </div>
 </div>
 {% endblock %}
@@ -42,13 +42,13 @@
 <!-- ACTUAL CONTENT -->
 <div data-content class="hidden">
 <div class="animate-fade-in max-w-lg mx-auto">
-    <form method="post" action="{% url 'split_expense:group_create' %}" class="space-y-4">
+    <form method="post" action="{% if is_edit %}{% url 'split_expense:group_edit' group.id %}{% else %}{% url 'split_expense:group_create' %}{% endif %}" class="space-y-4">
         {% csrf_token %}
         
         <div class="mn-card p-5 space-y-4">
             <div class="flex justify-center mb-2">
                 <div class="w-16 h-16 rounded-2xl bg-mn-bg dark:bg-mn-bg-dark flex items-center justify-center border-2 border-dashed border-mn-border dark:border-mn-border-dark text-mn-muted">
-                    <span class="material-symbols-outlined icon-lg">groups</span>
+                    <span class="material-symbols-outlined icon-lg">{% if is_edit %}edit{% else %}groups{% endif %}</span>
                 </div>
             </div>
 
@@ -59,15 +59,16 @@
                            id="name" 
                            name="name" 
                            required 
+                           value="{% if is_edit %}{{ group.name }}{% endif %}"
                            placeholder="e.g. Goa Trip, Office Lunch" 
                            class="w-full px-4 py-3 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-white/5 rounded-xl shadow-sm focus:ring-2 focus:ring-mn-accent focus:border-transparent transition-all outline-none text-mn-text dark:text-mn-text-dark font-medium placeholder-gray-400 dark:placeholder-gray-600">
                 </div>
-                <p class="text-xs text-mn-muted mt-2">You can add members after creating the group.</p>
+                <p class="text-xs text-mn-muted mt-2">{% if is_edit %}Update the group name above.{% else %}You can add members after creating the group.{% endif %}</p>
             </div>
         </div>
 
         <button type="submit" class="w-full py-3.5 bg-mn-dark text-mn-accent font-semibold rounded-2xl transition-all duration-200 active:scale-[0.98] shadow-soft hover:opacity-90">
-            Create Group
+            {% if is_edit %}Update Group{% else %}Create Group{% endif %}
         </button>
     </form>
 </div>

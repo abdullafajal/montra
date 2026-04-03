@@ -120,3 +120,89 @@ class SplitServicesTest(TestCase):
         # M2 net balance: +700 -> -500 = +200
         self.assertEqual(m3.net_balance, Decimal('0.00'))
         self.assertEqual(m2.net_balance, Decimal('200.00'))
+
+    def test_delete_expense(self):
+        """Create an expense, delete it, verify all balances return to 0."""
+        from .services import delete_expense
+        
+        expense = create_expense(
+            group=self.group,
+            paid_by=self.user1,
+            amount=Decimal('300.00'),
+            description='Deletable',
+            split_type='equal'
+        )
+        
+        delete_expense(expense)
+        
+        m1 = GroupMember.objects.get(group=self.group, user=self.user1)
+        m2 = GroupMember.objects.get(group=self.group, user=self.user2)
+        m3 = GroupMember.objects.get(group=self.group, user=self.user3)
+        
+        self.assertEqual(m1.net_balance, Decimal('0.00'))
+        self.assertEqual(m2.net_balance, Decimal('0.00'))
+        self.assertEqual(m3.net_balance, Decimal('0.00'))
+        self.assertEqual(Expense.objects.count(), 0)
+    
+    def test_update_expense(self):
+        """Create an expense, update it with a new amount, verify recalculated balances."""
+        from .services import update_expense
+        
+        expense = create_expense(
+            group=self.group,
+            paid_by=self.user1,
+            amount=Decimal('300.00'),
+            description='Original',
+            split_type='equal'
+        )
+        
+        # Update: user2 now pays 600 equally
+        new_expense = update_expense(
+            expense=expense,
+            paid_by=self.user2,
+            amount=Decimal('600.00'),
+            description='Updated',
+            split_type='equal'
+        )
+        
+        m1 = GroupMember.objects.get(group=self.group, user=self.user1)
+        m2 = GroupMember.objects.get(group=self.group, user=self.user2)
+        m3 = GroupMember.objects.get(group=self.group, user=self.user3)
+        
+        # user2 paid 600, each owes 200
+        # m1: paid 0, owed 200 -> -200
+        # m2: paid 600, owed 200 -> +400
+        # m3: paid 0, owed 200 -> -200
+        self.assertEqual(m1.net_balance, Decimal('-200.00'))
+        self.assertEqual(m2.net_balance, Decimal('400.00'))
+        self.assertEqual(m3.net_balance, Decimal('-200.00'))
+        self.assertEqual(new_expense.description, 'Updated')
+        self.assertEqual(Expense.objects.count(), 1)
+    
+    def test_remove_member_settled(self):
+        """Remove a member with zero balance – should succeed."""
+        from .services import remove_member
+        
+        # user3 has 0 balance (no expenses created)
+        remove_member(self.group, self.user3)
+        
+        self.assertFalse(
+            GroupMember.objects.filter(group=self.group, user=self.user3).exists()
+        )
+    
+    def test_remove_member_unsettled(self):
+        """Removing a member with non-zero balance should raise ValidationError."""
+        from .services import remove_member
+        from django.core.exceptions import ValidationError
+        
+        create_expense(
+            group=self.group,
+            paid_by=self.user1,
+            amount=Decimal('300.00'),
+            description='Lunch',
+            split_type='equal'
+        )
+        
+        with self.assertRaises(ValidationError):
+            remove_member(self.group, self.user2)
+

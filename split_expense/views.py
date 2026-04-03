@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.urls import reverse
 from .models import Group, GroupMember, Expense, Settlement
-from .services import create_expense, calculate_simplified_debts, create_settlement
+from .services import create_expense, calculate_simplified_debts, create_settlement, delete_expense, update_expense, remove_member
 from decimal import Decimal, InvalidOperation
 
 class GroupListView(LoginRequiredMixin, ListView):
@@ -472,9 +472,142 @@ class ExpenseDetailView(LoginRequiredMixin, View):
         expense = get_object_or_404(Expense, pk=expense_id, group=group)
         splits = expense.splits.select_related('user').all()
         
+        can_edit = (request.user == expense.paid_by or request.user == group.created_by)
+        
         return render(request, self.template_name, {
             'group': group,
             'expense': expense,
-            'splits': splits
+            'splits': splits,
+            'can_edit': can_edit
         })
+
+class ExpenseUpdateView(LoginRequiredMixin, View):
+    template_name = 'split_expense/expense_form.html'
+    
+    def get(self, request, group_id, expense_id):
+        group = get_object_or_404(Group, pk=group_id)
+        expense = get_object_or_404(Expense, pk=expense_id, group=group)
+        
+        if request.user != expense.paid_by and request.user != group.created_by:
+            messages.error(request, "You don't have permission to edit this expense.")
+            return redirect('split_expense:expense_detail', group_id=group.id, expense_id=expense.id)
+        
+        context = {
+            'group': group,
+            'members': group.members.all(),
+            'expense': expense,
+            'splits': {s.user_id: s for s in expense.splits.all()},
+            'is_edit': True
+        }
+        return render(request, self.template_name, context)
+    
+    def post(self, request, group_id, expense_id):
+        group = get_object_or_404(Group, pk=group_id)
+        expense = get_object_or_404(Expense, pk=expense_id, group=group)
+        
+        if request.user != expense.paid_by and request.user != group.created_by:
+            messages.error(request, "You don't have permission to edit this expense.")
+            return redirect('split_expense:expense_detail', group_id=group.id, expense_id=expense.id)
+        
+        description = request.POST.get('description')
+        amount_str = request.POST.get('amount')
+        paid_by_id = request.POST.get('paid_by')
+        split_type = request.POST.get('split_type', 'equal')
+        
+        try:
+            amount = Decimal(amount_str)
+            paid_by = group.members.get(id=paid_by_id)
+            
+            splits_data = []
+            if split_type in ['exact', 'percentage']:
+                for member in group.members.all():
+                    val = request.POST.get(f'split_val_{member.id}')
+                    if val:
+                        splits_data.append({
+                            'user': member,
+                            'value': Decimal(val)
+                        })
+            
+            new_expense = update_expense(
+                expense=expense,
+                paid_by=paid_by,
+                amount=amount,
+                description=description,
+                split_type=split_type,
+                splits_data=splits_data
+            )
+            messages.success(request, "Expense updated successfully.")
+            return redirect('split_expense:expense_detail', group_id=group.id, expense_id=new_expense.id)
+            
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            return redirect('split_expense:expense_edit', group_id=group.id, expense_id=expense.id)
+
+class ExpenseDeleteView(LoginRequiredMixin, View):
+    def post(self, request, group_id, expense_id):
+        group = get_object_or_404(Group, pk=group_id)
+        expense = get_object_or_404(Expense, pk=expense_id, group=group)
+        
+        if request.user != expense.paid_by and request.user != group.created_by:
+            messages.error(request, "You don't have permission to delete this expense.")
+            return redirect('split_expense:expense_detail', group_id=group.id, expense_id=expense.id)
+        
+        try:
+            delete_expense(expense)
+            messages.success(request, "Expense deleted and balances restored.")
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+        
+        return redirect('split_expense:group_detail', pk=group.id)
+
+class GroupUpdateView(LoginRequiredMixin, View):
+    template_name = 'split_expense/group_form.html'
+    
+    def get(self, request, pk):
+        group = get_object_or_404(Group, pk=pk)
+        if request.user != group.created_by:
+            messages.error(request, "Only the group creator can edit this group.")
+            return redirect('split_expense:group_detail', pk=group.pk)
+        
+        return render(request, self.template_name, {'group': group, 'is_edit': True})
+    
+    def post(self, request, pk):
+        group = get_object_or_404(Group, pk=pk)
+        if request.user != group.created_by:
+            messages.error(request, "Only the group creator can edit this group.")
+            return redirect('split_expense:group_detail', pk=group.pk)
+        
+        name = request.POST.get('name')
+        if not name:
+            messages.error(request, "Group name is required.")
+            return render(request, self.template_name, {'group': group, 'is_edit': True})
+        
+        group.name = name
+        group.save(update_fields=['name'])
+        messages.success(request, f"Group renamed to '{name}'.")
+        return redirect('split_expense:group_detail', pk=group.pk)
+
+class GroupMemberRemoveView(LoginRequiredMixin, View):
+    def post(self, request, group_id, user_id):
+        group = get_object_or_404(Group, pk=group_id)
+        
+        if request.user != group.created_by:
+            messages.error(request, "Only the group creator can remove members.")
+            return redirect('split_expense:group_detail', pk=group.id)
+        
+        if user_id == request.user.id:
+            messages.error(request, "You cannot remove yourself from the group.")
+            return redirect('split_expense:group_detail', pk=group.id)
+        
+        user_to_remove = get_object_or_404(User, pk=user_id)
+        
+        try:
+            remove_member(group, user_to_remove)
+            messages.success(request, f"{user_to_remove.get_full_name() or user_to_remove.username} has been removed from the group.")
+        except ValidationError as e:
+            messages.error(request, str(e.message))
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+        
+        return redirect('split_expense:group_detail', pk=group.id)
 

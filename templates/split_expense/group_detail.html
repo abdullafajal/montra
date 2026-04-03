@@ -41,7 +41,12 @@
         </div>
         
         <div class="flex items-center gap-2">
-            <a href="{% url 'split_expense:group_member_add' group.id %}" class="w-10 h-10 lg:w-auto lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl bg-mn-accent flex items-center justify-center lg:gap-2 hover:bg-mn-accent-hover transition-colors shadow-soft" title="Add Member">
+            {% if request.user == group.created_by %}
+            <a href="{% url 'split_expense:group_edit' group.id %}" class="w-10 h-10 rounded-xl bg-mn-dark flex items-center justify-center shadow-soft hover:opacity-90 transition-all" title="Edit Group">
+                <span class="material-symbols-outlined text-mn-accent" style="font-size:18px;">edit</span>
+            </a>
+            {% endif %}
+            <a href="{% url 'split_expense:group_member_add' group.id %}" class="w-10 h-10 lg:w-auto lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl bg-mn-accent flex items-center justify-center lg:gap-2 hover:opacity-90 transition-colors shadow-soft" title="Add Member">
                 <span class="material-symbols-outlined icon-md text-mn-dark">person_add</span>
                 <span class="hidden lg:inline text-sm font-semibold text-mn-dark">Add Member</span>
             </a>
@@ -211,6 +216,14 @@
                     <span class="text-mn-text dark:text-mn-text-dark font-bold">{{ currency_symbol|default:"₹" }}{{ member.total_owed|floatformat:0 }}</span>
                 </div>
             </div>
+            {% if request.user == group.created_by and member.user != request.user and member.net_balance == 0 %}
+            <form method="post" action="{% url 'split_expense:group_member_remove' group.id member.user.id %}" onsubmit="return confirm('Remove {{ member.user.username }} from this group?')">
+                {% csrf_token %}
+                <button type="submit" class="w-8 h-8 rounded-lg bg-mn-dark flex items-center justify-center hover:opacity-90 transition-colors" title="Remove member">
+                    <span class="material-symbols-outlined text-mn-accent" style="font-size:16px;">person_remove</span>
+                </button>
+            </form>
+            {% endif %}
         </div>
         {% endfor %}
         
