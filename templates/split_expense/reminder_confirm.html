@@ -4,6 +4,33 @@
 {% block title %}Confirm Reminder | Espere{% endblock %}
 
 {% block content %}
+
+<!-- SKELETON LOADER -->
+<div data-skeleton class="animate-pulse max-w-md mx-auto mt-12 px-4">
+    <div class="bg-mn-card dark:bg-mn-card-dark rounded-[24px] p-6 border border-mn-border dark:border-mn-border-dark text-center w-full">
+        <div class="w-16 h-16 rounded-full bg-mn-border dark:bg-mn-border-dark mx-auto mb-5"></div>
+        <div class="w-36 h-6 bg-mn-border dark:bg-mn-border-dark rounded mx-auto mb-2"></div>
+        <div class="bg-mn-bg dark:bg-mn-bg-dark rounded-2xl p-4 my-6 border border-mn-border dark:border-mn-border-dark">
+            <div class="flex items-center justify-between mb-3 border-b border-mn-border dark:border-mn-border-dark pb-3">
+                <div class="w-24 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-20 h-5 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+                <div class="w-28 h-3 bg-mn-border dark:bg-mn-border-dark rounded"></div>
+            </div>
+        </div>
+        <div class="w-64 h-3 bg-mn-border dark:bg-mn-border-dark rounded mx-auto mb-8"></div>
+        <div class="flex flex-col gap-3">
+            <div class="w-full h-12 bg-mn-border dark:bg-mn-border-dark rounded-xl"></div>
+            <div class="w-full h-12 bg-mn-border dark:bg-mn-border-dark rounded-xl"></div>
+        </div>
+        <div class="w-48 h-2 bg-mn-border dark:bg-mn-border-dark rounded mx-auto mt-4"></div>
+    </div>
+</div>
+
+<!-- ACTUAL CONTENT -->
+<div data-content class="hidden">
 <div class="max-w-md mx-auto mt-12 px-4" data-aos="fade-up">
     <div class="bg-white dark:bg-[#1A1A1A] rounded-[24px] p-6 shadow-soft border border-gray-100 dark:border-white/5 text-center w-full">
         <!-- Icon -->
@@ -43,5 +70,6 @@
         
         <p class="text-[10px] text-mn-muted mt-4 uppercase tracking-widest font-bold">Note: 24h cooldown applies after sending</p>
     </div>
+</div>
 </div>
 {% endblock %}

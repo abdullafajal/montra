@@ -3,15 +3,44 @@
 {% block title %}Create Group{% endblock %}
 
 {% block top_bar %}
+<!-- Header Skeleton -->
+<div data-skeleton class="animate-pulse px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark"></div>
+    <div class="w-24 h-5 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+</div>
+<!-- Header Content -->
+<div data-content class="hidden">
 <div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center gap-3">
     <a href="{% url 'split_expense:group_list' %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all">
         <span class="material-symbols-outlined icon-md text-mn-text dark:text-mn-text-dark">arrow_back</span>
     </a>
     <h1 class="text-lg font-bold text-mn-text dark:text-mn-text-dark">New Group</h1>
 </div>
+</div>
 {% endblock %}
 
 {% block content %}
+
+<!-- SKELETON LOADER -->
+<div data-skeleton class="animate-pulse max-w-lg mx-auto">
+    <div class="bg-mn-card dark:bg-mn-card-dark rounded-[20px] p-5 space-y-4 border border-mn-border dark:border-mn-border-dark">
+        <!-- Icon Skeleton -->
+        <div class="flex justify-center mb-2">
+            <div class="w-16 h-16 rounded-2xl bg-mn-border dark:bg-mn-border-dark"></div>
+        </div>
+        <!-- Label + Input Skeleton -->
+        <div>
+            <div class="w-24 h-3 bg-mn-border dark:bg-mn-border-dark rounded mb-2"></div>
+            <div class="w-full h-11 bg-mn-border dark:bg-mn-border-dark rounded-xl"></div>
+            <div class="w-56 h-3 bg-mn-border dark:bg-mn-border-dark rounded mt-2"></div>
+        </div>
+    </div>
+    <!-- Submit Button Skeleton -->
+    <div class="w-full h-12 bg-mn-card dark:bg-mn-card-dark rounded-2xl mt-4"></div>
+</div>
+
+<!-- ACTUAL CONTENT -->
+<div data-content class="hidden">
 <div class="animate-fade-in max-w-lg mx-auto">
     <form method="post" action="{% url 'split_expense:group_create' %}" class="space-y-4">
         {% csrf_token %}
@@ -41,5 +70,6 @@
             Create Group
         </button>
     </form>
+</div>
 </div>
 {% endblock %}
