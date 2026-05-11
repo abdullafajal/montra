@@ -12,6 +12,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("reports/", include("reports.urls")),
     path("groups/", include("split_expense.urls", namespace='split_expense')),
+    path("api/", include("api.urls", namespace='api')),
     path('', include('pwa.urls')),
 ]
 

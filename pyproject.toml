@@ -12,4 +12,5 @@ dependencies = [
     "django-pwa>=2.0.1",
     "pillow>=12.1.1",
     "python-dotenv>=1.0",
+    "firebase-admin>=7.4.0",
 ]

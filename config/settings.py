@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "transactions",
     "reports",
     "split_expense",
+    "api",
     "pwa",
 ]
 

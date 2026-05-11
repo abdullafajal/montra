@@ -36,6 +36,7 @@ class GroupMember(models.Model):
     
     # When the user was last sent an email reminder for owing money in this group
     last_reminded_at = models.DateTimeField(null=True, blank=True)
+    reminders_sent_today = models.PositiveIntegerField(default=0)
 
     class Meta:
         unique_together = ('group', 'user')

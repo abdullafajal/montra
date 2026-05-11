@@ -361,45 +361,76 @@ class SendReminderView(LoginRequiredMixin, View):
         user_to_remind_id = request.POST.get('user_id')
         user_to_remind = get_object_or_404(User, id=user_to_remind_id)
         
-        # Rate limit: 1 email per day (24 hours) via database persistent tracking
+        # Rate limit: 3 per 24 hours
+        from django.utils import timezone
+        now = timezone.now()
+
         membership = GroupMember.objects.filter(group=group, user=user_to_remind).first()
-        if membership and membership.last_reminded_at:
-            from django.utils import timezone
-            if timezone.now() < membership.last_reminded_at + timezone.timedelta(hours=24):
-                messages.warning(request, f"You can only send one email reminder to {user_to_remind.username} per day for this group. (Try sharing instead!)")
+        if membership:
+            if membership.last_reminded_at and now >= membership.last_reminded_at + timezone.timedelta(hours=24):
+                membership.reminders_sent_today = 0
+            
+            if membership.reminders_sent_today >= 3:
+                messages.warning(request, f"You can only send 3 reminders to {user_to_remind.username} per day for this group. (Try sharing instead!)")
                 return redirect(request.META.get('HTTP_REFERER', 'split_expense:group_detail'))
             
         amount_owed = request.POST.get('amount_owed', 'some amount')
         
-        subject = f"Friendly Reminder: Action needed in '{group.name}'"
+        subject = f"Action needed in '{group.name}'"
+        email_body_text = f"Hi {user_to_remind.username},\n\nJust a quick reminder regarding your balance in '{group.name}'.\n\nPlease settle up when you can!"
+        push_body_text = f"Just a reminder regarding your balance of {amount_owed}. Please settle up!"
         
-        html_message = render_to_string('split_expense/email/payment_reminder.html', {
-            'user': user_to_remind,
-            'sender_name': request.user.get_full_name() or request.user.username,
-            'group_name': group.name,
-            'amount_owed': amount_owed
-        })
+        pushed = False
+        from accounts.models import DeviceToken
+        from config.firebase import send_push_notification
         
-        try:
-            from django.utils import timezone
-            send_mail(
-                subject=subject,
-                message=f"Hi {user_to_remind.username},\n\nJust a quick reminder regarding your balance in '{group.name}'.",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user_to_remind.email],
-                html_message=html_message,
-                fail_silently=False
-            )
+        tokens = DeviceToken.objects.filter(user=user_to_remind)
+        if tokens.exists():
+            for dt in tokens:
+                success = send_push_notification(
+                    token=dt.token, 
+                    title=subject, 
+                    body=push_body_text,
+                    data={
+                        "action": "open_split_group",
+                        "group_id": str(group.id),
+                        "group_name": group.name,
+                    }
+                )
+                if success:
+                    pushed = True
+
+        print(f"[DEBUG FCM WEB] Push notification successful: {pushed}")
+        if not pushed:
+            html_message = render_to_string('split_expense/email/payment_reminder.html', {
+                'user': user_to_remind,
+                'sender_name': request.user.get_full_name() or request.user.username,
+                'group_name': group.name,
+                'amount_owed': amount_owed
+            })
             
-            # Persist the lock for 24 hours in the database
-            if membership:
-                membership.last_reminded_at = timezone.now()
-                membership.save()
-                
-            messages.success(request, f"Reminder email successfully sent to {user_to_remind.username}.")
-        except Exception as e:
-            messages.error(request, f"Failed to send reminder email. Reason: {e}")
+            try:
+                from django.conf import settings as conf
+                send_mail(
+                    subject=subject,
+                    message=email_body_text,
+                    from_email=conf.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user_to_remind.email],
+                    html_message=html_message,
+                    fail_silently=False
+                )
+            except Exception as e:
+                messages.error(request, f"Failed to send reminder email. Reason: {e}")
+                return redirect(request.META.get('HTTP_REFERER', 'split_expense:group_detail'))
             
+        if membership:
+            if membership.reminders_sent_today == 0 or membership.last_reminded_at is None:
+                membership.last_reminded_at = now
+            membership.reminders_sent_today += 1
+            membership.save()
+            
+        msg = "Push notification successfully sent" if pushed else "Reminder email successfully sent"
+        messages.success(request, f"{msg} to {user_to_remind.username}.")
         return redirect(request.META.get('HTTP_REFERER', 'split_expense:group_detail'))
 
 from django.http import JsonResponse

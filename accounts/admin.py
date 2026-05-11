@@ -20,3 +20,10 @@ class PasswordResetTokenAdmin(admin.ModelAdmin):
     search_fields = ("user__username", "user__email", "token")
     list_filter = ("attempt_count",)
     readonly_fields = ("token",)
+
+from .models import DeviceToken
+
+@admin.register(DeviceToken)
+class DeviceTokenAdmin(admin.ModelAdmin):
+    list_display = ("user", "token", "created_at")
+    search_fields = ("user__username", "user__email", "token")
