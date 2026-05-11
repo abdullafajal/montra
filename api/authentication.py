@@ -26,8 +26,7 @@ class APIToken(models.Model):
 
     @classmethod
     def generate_token(cls, user):
-        """Create a new token for the given user, removing old ones."""
-        cls.objects.filter(user=user).delete()
+        """Create a new token for the given user."""
         key = secrets.token_hex(32)
         return cls.objects.create(user=user, key=key)
 

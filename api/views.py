@@ -156,6 +156,18 @@ class LoginAPIView(View):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
+class LogoutAPIView(View):
+    """POST /api/auth/logout/ — deletes the current session token."""
+
+    @method_decorator(api_login_required)
+    def post(self, request):
+        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+        token_key = auth_header[7:].strip()
+        APIToken.objects.filter(key=token_key).delete()
+        return JsonResponse({"message": "Logged out successfully."})
+
+
+@method_decorator(csrf_exempt, name="dispatch")
 class DeviceTokenAPIView(View):
     """POST /api/devices/register/ — registers FCM device token."""
 
