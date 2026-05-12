@@ -10,35 +10,66 @@ class Command(BaseCommand):
     help = "Send daily reminder emails to users to add their expenses."
 
     def handle(self, *args, **options):
-        # Find all active users who have email_reminders enabled and an email address
+        from accounts.models import DeviceToken
+        from config.firebase import send_push_notification
+
+        # Find all active users who have email_reminders enabled
+        # (Renamed logically to 'reminders enabled' though model field is email_reminders)
         users = User.objects.filter(
             is_active=True, 
             userprofile__email_reminders=True
-        ).exclude(email="")
+        )
 
         if not users.exists():
             self.stdout.write(self.style.WARNING("No users matched the criteria to send reminders to."))
             return
 
         subject = "Time to update your Espere expenses!"
-        sent_count = 0
+        push_body = "Don't forget to log your expenses for today to keep your budget on track!"
+        sent_email_count = 0
+        sent_push_count = 0
 
         for user in users:
-            context = {"user": user}
-            html_message = render_to_string("accounts/email/daily_reminder.html", context)
-            plain_message = strip_tags(html_message)
+            # 1. Try pushing notification first if user has app tokens
+            tokens = DeviceToken.objects.filter(user=user)
+            pushed = False
             
-            try:
-                send_mail(
-                    subject,
-                    plain_message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [user.email],
-                    html_message=html_message,
-                    fail_silently=True,
-                )
-                sent_count += 1
-            except Exception as e:
-                self.stderr.write(self.style.ERROR(f"Failed to send email to {user.email}: {e}"))
+            if tokens.exists():
+                for dt in tokens:
+                    success = send_push_notification(
+                        token=dt.token,
+                        title=subject,
+                        body=push_body,
+                        data={"action": "open_dashboard"}
+                    )
+                    if success:
+                        pushed = True
+                
+                if pushed:
+                    sent_push_count += 1
+                    self.stdout.write(f"Sent push notification to {user.username}")
+                    continue # Skip email if pushed successfully
 
-        self.stdout.write(self.style.SUCCESS(f"Successfully sent {sent_count} reminder emails."))
+            # 2. Fallback to email if not pushed and user has an email
+            if user.email:
+                context = {"user": user}
+                html_message = render_to_string("accounts/email/daily_reminder.html", context)
+                plain_message = strip_tags(html_message)
+                
+                try:
+                    send_mail(
+                        subject,
+                        plain_message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [user.email],
+                        html_message=html_message,
+                        fail_silently=True,
+                    )
+                    sent_email_count += 1
+                    self.stdout.write(f"Sent email reminder to {user.email}")
+                except Exception as e:
+                    self.stderr.write(self.style.ERROR(f"Failed to send email to {user.email}: {e}"))
+
+        self.stdout.write(self.style.SUCCESS(
+            f"Successfully sent {sent_push_count} push notifications and {sent_email_count} reminder emails."
+        ))
