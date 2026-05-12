@@ -506,6 +506,7 @@ class TransactionListAPIView(View):
 
         return JsonResponse({
             "transactions": [_transaction_to_dict(t, cs) for t in transactions],
+            "currency_symbol": cs,
             "total": total,
             "page": page,
             "per_page": per_page,
@@ -635,8 +636,10 @@ class CategoryListAPIView(View):
     def get(self, request):
         user = request.api_user
         categories = Category.objects.filter(Q(is_system=True) | Q(user=user))
+        profile, _ = UserProfile.objects.get_or_create(user=user)
         return JsonResponse({
-            "categories": [_category_to_dict(c) for c in categories]
+            "categories": [_category_to_dict(c) for c in categories],
+            "currency_symbol": profile.get_currency_symbol()
         })
 
     @method_decorator(api_login_required)
