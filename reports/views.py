@@ -59,12 +59,17 @@ class ReportsView(LoginRequiredMixin, TemplateView):
         max_total = float(top_cats_qs[0]["total"]) if top_cats_qs else 1
         top_categories = []
         for c in top_cats_qs:
+            name = c.get("category__name") or "Other"
+            icon = c.get("category__icon") or "category"
+            color = c.get("category__color") or "#C8E64A"
+            total = float(c.get("total") or 0)
+            
             top_categories.append({
-                "name": c["category__name"] or "Other",
-                "icon": c["category__icon"] or "category",
-                "color": c["category__color"] or "#6366f1",
-                "total": float(c["total"]),
-                "pct": round(float(c["total"]) / max_total * 100, 1),
+                "name": name,
+                "icon": icon,
+                "color": color,
+                "total": total,
+                "pct": round(total / max_total * 100, 1) if max_total > 0 else 0,
             })
 
         # Yearly totals
@@ -87,6 +92,7 @@ class ReportsView(LoginRequiredMixin, TemplateView):
         pie_labels = [c["name"] for c in top_categories]
         pie_values = [c["total"] for c in top_categories]
         pie_colors = [c["color"] for c in top_categories]
+        pie_icons = [c["icon"] for c in top_categories]
 
         ctx.update({
             # Template variable names
@@ -103,17 +109,24 @@ class ReportsView(LoginRequiredMixin, TemplateView):
             "cat_labels": json.dumps(pie_labels),
             "cat_values": json.dumps(pie_values),
             "cat_colors": json.dumps(pie_colors),
+            "cat_icons": json.dumps(pie_icons),
             "savings_data": json.dumps(savings_values),
         })
         return ctx
 
-def _filter_by_period(qs, period, today=None):
+def _filter_by_period(qs, period, today=None, start_date=None, end_date=None):
     """Filter a transaction queryset by a period string."""
     if today is None:
         today = timezone.now().date()
-    if period == "1m":
+    
+    if period == "current_month" or period == "1m":
         start = today.replace(day=1)
         return qs.filter(date__date__gte=start), f"{today.strftime('%B %Y')}"
+    elif period == "last_month":
+        # First day of this month - 1 day = last day of last month
+        last_month_end = today.replace(day=1) - timedelta(days=1)
+        last_month_start = last_month_end.replace(day=1)
+        return qs.filter(date__date__gte=last_month_start, date__date__lte=last_month_end), last_month_start.strftime('%B %Y')
     elif period == "3m":
         start = (today - timedelta(days=90)).replace(day=1)
         return qs.filter(date__date__gte=start), "Last 3 Months"
@@ -123,6 +136,8 @@ def _filter_by_period(qs, period, today=None):
     elif period == "1y":
         start = today.replace(month=1, day=1)
         return qs.filter(date__date__gte=start), f"Year {today.year}"
+    elif period == "custom" and start_date and end_date:
+        return qs.filter(date__date__gte=start_date, date__date__lte=end_date), f"{start_date} to {end_date}"
     else:  # "all"
         return qs, "All Time"
 
@@ -130,10 +145,14 @@ def _filter_by_period(qs, period, today=None):
 class ExportCSVView(LoginRequiredMixin, View):
     def get(self, request):
         period = request.GET.get("period", "all")
+        start_date = request.GET.get("start_date")
+        end_date = request.GET.get("end_date")
+        
         txns = Transaction.objects.filter(
             user=request.user,
         ).select_related("category").order_by("-date")
-        txns, _ = _filter_by_period(txns, period)
+        
+        txns, _ = _filter_by_period(txns, period, start_date=start_date, end_date=end_date)
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="espere_transactions.csv"'

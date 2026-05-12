@@ -66,6 +66,31 @@ def _transaction_to_dict(txn, currency_symbol="₹"):
     }
 
 
+def _saving_goal_to_dict(g):
+    """Serialize a SavingsGoal instance."""
+    return {
+        "id": g.id,
+        "name": g.name,
+        "target_amount": str(g.target_amount),
+        "current_amount": str(g.current_amount),
+        "icon": g.icon,
+        "color": g.color,
+        "deadline": g.deadline.isoformat() if g.deadline else None,
+        "is_completed": g.is_completed,
+        "percentage": g.get_percentage(),
+        "remaining": str(g.get_remaining()),
+        "history": [
+            {
+                "id": t.id,
+                "amount": str(t.amount),
+                "notes": t.notes,
+                "date": t.date.isoformat(),
+            }
+            for t in g.history.all()[:20]
+        ]
+    }
+
+
 def _category_to_dict(cat):
     """Serialize a Category instance."""
     return {
@@ -328,9 +353,13 @@ class DashboardAPIView(View):
             line_values.append(float(daily))
 
         # Budget warnings
-        budgets = Budget.objects.filter(user=user, month=month_start)
+        budgets = Budget.objects.filter(user=user).select_related("category")
         budget_warnings = [
-            {"category": b.category.name, "icon": b.category.icon}
+            {
+                "category": b.category.name,
+                "icon": b.category.icon,
+                "color": b.category.color
+            }
             for b in budgets if b.is_exceeded()
         ]
 
@@ -356,6 +385,42 @@ class DashboardAPIView(View):
             "line_values": line_values,
             "budget_warnings": budget_warnings,
             "insights": insights,
+        })
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ReportAPIView(View):
+    """GET /api/reports/ — yearly report data."""
+
+    @method_decorator(api_login_required)
+    def get(self, request):
+        from reports.views import ReportsView
+        user = request.api_user
+        today = timezone.now().date()
+        year = int(request.GET.get("year", today.year))
+
+        # Re-use the logic from ReportsView but return JSON
+        view = ReportsView()
+        request.user = user  # Ensure request.user is set for the view
+        view.request = request
+        ctx = view.get_context_data(year=year)
+
+        return JsonResponse({
+            "selected_year": ctx["selected_year"],
+            "currency_symbol": user.userprofile.get_currency_symbol() if hasattr(user, 'userprofile') else "$",
+            "annual_income": str(ctx["annual_income"]),
+            "annual_expenses": str(ctx["annual_expenses"]),
+            "annual_net": str(ctx["annual_net"]),
+            "monthly_summary": ctx["monthly_summary"],
+            "top_categories": ctx["top_categories"],
+            "bar_labels": json.loads(ctx["monthly_labels"]),
+            "bar_income": json.loads(ctx["monthly_income_data"]),
+            "bar_expense": json.loads(ctx["monthly_expense_data"]),
+            "pie_labels": json.loads(ctx["cat_labels"]),
+            "pie_values": json.loads(ctx["cat_values"]),
+            "pie_colors": json.loads(ctx["cat_colors"]),
+            "pie_icons": json.loads(ctx["cat_icons"]),
+            "savings_trend": json.loads(ctx["savings_data"]),
         })
 
 
@@ -605,6 +670,24 @@ class CategoryDetailAPIView(View):
     """DELETE /api/categories/<id>/ — delete a user category."""
 
     @method_decorator(api_login_required)
+    def put(self, request, pk):
+        try:
+            category = Category.objects.get(pk=pk, user=request.api_user, is_system=False)
+        except Category.DoesNotExist:
+            return JsonResponse({"error": "Category not found."}, status=404)
+
+        data = parse_json_body(request)
+        if "name" in data:
+            category.name = data["name"].strip()
+        if "icon" in data:
+            category.icon = data["icon"]
+        if "color" in data:
+            category.color = data["color"]
+        
+        category.save()
+        return JsonResponse({"category": _category_to_dict(category)})
+
+    @method_decorator(api_login_required)
     def delete(self, request, pk):
         try:
             category = Category.objects.get(pk=pk, user=request.api_user, is_system=False)
@@ -638,7 +721,11 @@ class BudgetListAPIView(View):
                 "percentage": b.get_percentage(),
                 "is_exceeded": b.is_exceeded(),
             })
-        return JsonResponse({"budgets": data})
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        return JsonResponse({
+            "budgets": data,
+            "currency_symbol": profile.get_currency_symbol()
+        })
 
     @method_decorator(api_login_required)
     def post(self, request):
@@ -658,15 +745,17 @@ class BudgetListAPIView(View):
             return JsonResponse({"error": "Invalid amount."}, status=400)
 
         month_str = data.get("month", "")
-        try:
-            from datetime import datetime
-            month_date = datetime.strptime(month_str, "%Y-%m-%d").date().replace(day=1)
-        except (ValueError, TypeError):
-            month_date = timezone.localdate().replace(day=1)
+        month_date = timezone.localdate().replace(day=1)
+        if month_str:
+            try:
+                from datetime import datetime
+                month_date = datetime.strptime(month_str, "%Y-%m-%d").date().replace(day=1)
+            except (ValueError, TypeError):
+                pass
 
         budget, created = Budget.objects.update_or_create(
-            user=user, category=category, month=month_date,
-            defaults={"amount": amount},
+            user=user, category=category,
+            defaults={"amount": amount, "month": month_date},
         )
         return JsonResponse({
             "budget": {
@@ -681,6 +770,20 @@ class BudgetListAPIView(View):
         }, status=201 if created else 200)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
+class BudgetDetailAPIView(View):
+    """DELETE /api/budgets/<id>/"""
+
+    @method_decorator(api_login_required)
+    def delete(self, request, pk):
+        try:
+            budget = Budget.objects.get(pk=pk, user=request.api_user)
+            budget.delete()
+            return JsonResponse({"message": "Budget deleted successfully."})
+        except Budget.DoesNotExist:
+            return JsonResponse({"error": "Budget not found."}, status=404)
+
+
 # ---------------------------------------------------------------------------
 # Savings Goals
 # ---------------------------------------------------------------------------
@@ -693,21 +796,11 @@ class SavingsListAPIView(View):
     def get(self, request):
         user = request.api_user
         goals = SavingsGoal.objects.filter(user=user)
-        data = []
-        for g in goals:
-            data.append({
-                "id": g.id,
-                "name": g.name,
-                "target_amount": str(g.target_amount),
-                "current_amount": str(g.current_amount),
-                "icon": g.icon,
-                "color": g.color,
-                "deadline": g.deadline.isoformat() if g.deadline else None,
-                "is_completed": g.is_completed,
-                "percentage": g.get_percentage(),
-                "remaining": str(g.get_remaining()),
-            })
-        return JsonResponse({"goals": data})
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        return JsonResponse({
+            "goals": [_saving_goal_to_dict(g) for g in goals],
+            "currency_symbol": profile.get_currency_symbol()
+        })
 
     @method_decorator(api_login_required)
     def post(self, request):
@@ -761,22 +854,66 @@ class SavingsAddMoneyAPIView(View):
         data = parse_json_body(request)
         try:
             amount = Decimal(str(data.get("amount", "0")))
+            notes = data.get("notes", "")
             if amount <= 0:
                 return JsonResponse({"error": "Amount must be positive."}, status=400)
         except (InvalidOperation, ValueError):
             return JsonResponse({"error": "Invalid amount."}, status=400)
 
-        goal.add_money(amount)
+        goal.add_money(amount, notes=notes)
         return JsonResponse({
-            "goal": {
-                "id": goal.id,
-                "name": goal.name,
-                "current_amount": str(goal.current_amount),
-                "target_amount": str(goal.target_amount),
-                "percentage": goal.get_percentage(),
-                "is_completed": goal.is_completed,
-            }
+            "goal": _saving_goal_to_dict(goal)
         })
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SavingsDetailAPIView(View):
+    """GET/PUT/DELETE /api/savings/<id>/"""
+
+    @method_decorator(api_login_required)
+    def get(self, request, pk):
+        try:
+            goal = SavingsGoal.objects.get(pk=pk, user=request.api_user)
+        except SavingsGoal.DoesNotExist:
+            return JsonResponse({"error": "Goal not found."}, status=404)
+        return JsonResponse({"goal": _saving_goal_to_dict(goal)})
+
+    @method_decorator(api_login_required)
+    def put(self, request, pk):
+        try:
+            goal = SavingsGoal.objects.get(pk=pk, user=request.api_user)
+        except SavingsGoal.DoesNotExist:
+            return JsonResponse({"error": "Goal not found."}, status=404)
+
+        data = parse_json_body(request)
+        if "name" in data:
+            goal.name = data["name"]
+        if "target_amount" in data:
+            goal.target_amount = Decimal(str(data["target_amount"]))
+        if "current_amount" in data:
+            goal.current_amount = Decimal(str(data["current_amount"]))
+        if "icon" in data:
+            goal.icon = data["icon"]
+        if "color" in data:
+            goal.color = data["color"]
+        if "deadline" in data:
+            try:
+                goal.deadline = parse_date(data["deadline"])
+            except:
+                pass
+        
+        goal.save()
+        return JsonResponse({"goal": _saving_goal_to_dict(goal)})
+
+    @method_decorator(api_login_required)
+    def delete(self, request, pk):
+        try:
+            goal = SavingsGoal.objects.get(pk=pk, user=request.api_user)
+        except SavingsGoal.DoesNotExist:
+            return JsonResponse({"error": "Goal not found."}, status=404)
+
+        goal.delete()
+        return JsonResponse({"success": True})
 
 
 # ---------------------------------------------------------------------------

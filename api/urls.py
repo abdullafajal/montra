@@ -13,8 +13,9 @@ urlpatterns = [
 
     path("devices/register/", views.DeviceTokenAPIView.as_view(), name="device_register"),
 
-    # Dashboard
+    # Dashboard & Reports
     path("dashboard/", views.DashboardAPIView.as_view(), name="dashboard"),
+    path("reports/", views.ReportAPIView.as_view(), name="reports"),
 
     # Transactions
     path("transactions/", views.TransactionListAPIView.as_view(), name="transaction_list"),
@@ -26,9 +27,11 @@ urlpatterns = [
 
     # Budgets
     path("budgets/", views.BudgetListAPIView.as_view(), name="budget_list"),
+    path("budgets/<int:pk>/", views.BudgetDetailAPIView.as_view(), name="budget_detail"),
 
     # Savings
     path("savings/", views.SavingsListAPIView.as_view(), name="savings_list"),
+    path("savings/<int:pk>/", views.SavingsDetailAPIView.as_view(), name="savings_detail"),
     path("savings/<int:pk>/add-money/", views.SavingsAddMoneyAPIView.as_view(), name="savings_add_money"),
 
     # Split

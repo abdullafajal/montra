@@ -12,6 +12,11 @@ class Category(models.Model):
         ("trending_up", "Investment"), ("redeem", "Gift"), ("category", "Other"),
         ("receipt_long", "Bills"), ("flight", "Travel"), ("checkroom", "Clothing"),
         ("fitness_center", "Fitness"), ("pets", "Pets"), ("coffee", "Coffee"),
+        ("medical_services", "Medical"), ("sports_esports", "Gaming"), ("sports_soccer", "Sports"),
+        ("brush", "Art"), ("music_note", "Music"), ("science", "Science"),
+        ("build", "Tools"), ("celebration", "Party"), ("fastfood", "Fast Food"),
+        ("local_gas_station", "Fuel"), ("electric_bolt", "Electric"), ("water_drop", "Water"),
+        ("family_restroom", "Family"), ("child_care", "Baby"),
     ]
 
     name = models.CharField(max_length=50)
@@ -63,25 +68,27 @@ class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="budgets")
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    month = models.DateField(help_text="First day of the budget month")
+    month = models.DateField(help_text="The month this budget was last updated or applies to")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ["user", "category", "month"]
-        ordering = ["-month"]
+        unique_together = ["user", "category"]
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"Budget: {self.category} — {self.amount}"
 
     def get_spent(self):
-        """Get total spent in this category for this month."""
+        """Get total spent in this category for the CURRENT month."""
         from django.db.models import Sum
+        from django.utils import timezone
+        now = timezone.localdate()
         total = Transaction.objects.filter(
             user=self.user,
             category=self.category,
             type="expense",
-            date__year=self.month.year,
-            date__month=self.month.month,
+            date__year=now.year,
+            date__month=now.month,
         ).aggregate(total=Sum("amount"))["total"]
         return total or 0
 
@@ -129,8 +136,27 @@ class SavingsGoal(models.Model):
         remaining = self.target_amount - self.current_amount
         return max(remaining, 0)
 
-    def add_money(self, amount):
+    def add_money(self, amount, notes=""):
         self.current_amount += amount
         if self.current_amount >= self.target_amount:
             self.is_completed = True
         self.save()
+        # Log the transaction
+        SavingsTransaction.objects.create(
+            goal=self,
+            amount=amount,
+            notes=notes
+        )
+
+
+class SavingsTransaction(models.Model):
+    goal = models.ForeignKey(SavingsGoal, on_delete=models.CASCADE, related_name="history")
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    notes = models.CharField(max_length=255, blank=True)
+    date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.goal.name}: +{self.amount} on {self.date.date()}"
