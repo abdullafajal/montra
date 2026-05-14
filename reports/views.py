@@ -20,7 +20,7 @@ class ReportsView(LoginRequiredMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        today = timezone.now().date()
+        today = timezone.localdate()
         year = int(request.GET.get("year", today.year))
         
         context = self.get_context_data(year=year, **kwargs)
@@ -29,7 +29,8 @@ class ReportsView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         user = self.request.user
-        today = timezone.now().date()
+        user = self.request.user
+        today = timezone.localdate()
         year = kwargs.get("year", today.year)
 
         # Monthly summary for the year
@@ -117,7 +118,7 @@ class ReportsView(LoginRequiredMixin, TemplateView):
 def _filter_by_period(qs, period, today=None, start_date=None, end_date=None):
     """Filter a transaction queryset by a period string."""
     if today is None:
-        today = timezone.now().date()
+        today = timezone.localdate()
     
     if period == "current_month" or period == "1m":
         start = today.replace(day=1)
@@ -249,7 +250,7 @@ class ExportPDFView(LoginRequiredMixin, View):
 
         # --- Header ---
         user = request.user
-        today = timezone.now().date()
+        today = timezone.localdate()
         elements.append(Paragraph("Espere.", title_style))
         elements.append(Paragraph("Financial Report", subtitle_style))
         elements.append(Spacer(1, 0.15 * inch))

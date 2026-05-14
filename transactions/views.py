@@ -27,16 +27,16 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         user = self.request.user
-        now = timezone.now()
-        today = now.date()
+        today = timezone.localdate()
+        month_start = today.replace(day=1)
 
         # --- Current month stats ---
-        month_start = today.replace(day=1)
-        month_txns = Transaction.objects.filter(user=user, date__date__gte=month_start, date__date__lte=today)
+        month_txns = Transaction.objects.filter(
+            user=user, date__year=today.year, date__month=today.month
+        )
 
         income = month_txns.filter(type="income").aggregate(t=Sum("amount"))["t"] or Decimal("0")
         expenses = month_txns.filter(type="expense").aggregate(t=Sum("amount"))["t"] or Decimal("0")
-        balance = income - expenses
 
         # All-time balance
         all_income = Transaction.objects.filter(user=user, type="income").aggregate(t=Sum("amount"))["t"] or Decimal("0")

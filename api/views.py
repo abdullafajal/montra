@@ -296,13 +296,12 @@ class DashboardAPIView(View):
     @method_decorator(api_login_required)
     def get(self, request):
         user = request.api_user
-        now = timezone.now()
-        today = now.date()
+        today = timezone.localdate()
         month_start = today.replace(day=1)
 
-        # Monthly stats
+        # Monthly stats — ensure we include everything in the current month
         month_txns = Transaction.objects.filter(
-            user=user, date__date__gte=month_start, date__date__lte=today
+            user=user, date__year=today.year, date__month=today.month
         )
         income = month_txns.filter(type="income").aggregate(t=Sum("amount"))["t"] or Decimal("0")
         expenses = month_txns.filter(type="expense").aggregate(t=Sum("amount"))["t"] or Decimal("0")
@@ -396,7 +395,7 @@ class ReportAPIView(View):
     def get(self, request):
         from reports.views import ReportsView
         user = request.api_user
-        today = timezone.now().date()
+        today = timezone.localdate()
         year = int(request.GET.get("year", today.year))
 
         # Re-use the logic from ReportsView but return JSON
