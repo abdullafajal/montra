@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Friends - Espere{% endblock %}
+
+{% block top_bar %}
+<!-- Header Content -->
+<div class="px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <a href="{% url 'split_expense:group_list' %}" class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark flex items-center justify-center shadow-soft hover:shadow-elevated transition-all lg:hidden">
+            <span class="material-symbols-outlined icon-md text-mn-text dark:text-mn-text-dark">arrow_back</span>
+        </a>
+        <h1 class="text-xl font-bold text-mn-text dark:text-mn-text-dark">Friends</h1>
+    </div>
+    <button onclick="document.getElementById('add-friend-modal').classList.remove('hidden')" class="w-10 h-10 lg:w-auto lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl bg-mn-accent flex items-center justify-center lg:gap-2 hover:bg-mn-accent-hover transition-colors shadow-soft">
+        <span class="material-symbols-outlined icon-md text-mn-dark">person_add</span>
+        <span class="hidden lg:inline text-sm font-semibold text-mn-dark">Add Friend</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6" data-aos="fade-up">
+    
+    <!-- Tab Navigation -->
+    <div class="flex bg-mn-card dark:bg-mn-card-dark rounded-2xl p-1 shadow-soft">
+        <button onclick="switchFriendTab('friends')" id="btn-friends" class="flex-1 py-2 text-sm font-semibold rounded-xl bg-mn-bg dark:bg-mn-dark text-mn-text dark:text-mn-text-dark transition-colors">
+            My Friends <span class="text-[10px] opacity-50 ml-1">{{ friendships.count }}</span>
+        </button>
+        <button onclick="switchFriendTab('requests')" id="btn-requests" class="flex-1 py-2 text-sm font-semibold rounded-xl text-mn-muted hover:text-mn-text dark:hover:text-mn-text-dark transition-colors">
+            Requests {% if pending_requests.exists %}<span class="w-2 h-2 rounded-full bg-mn-accent inline-block ml-1"></span>{% endif %}
+        </button>
+        <button onclick="switchFriendTab('sent')" id="btn-sent" class="flex-1 py-2 text-sm font-semibold rounded-xl text-mn-muted hover:text-mn-text dark:hover:text-mn-text-dark transition-colors">Sent</button>
+    </div>
+
+    <!-- Tab 1: Friends List -->
+    <form action="{% url 'split_expense:group_create' %}" method="get" id="tab-friends" class="space-y-3" onsubmit="return validateFriendSelection()">
+        {% if friendships %}
+        <div class="pb-2">
+            <button type="submit" class="w-full py-4 bg-mn-dark text-mn-accent font-bold rounded-2xl shadow-elevated flex items-center justify-center gap-2 hover:bg-black transition-all active:scale-[0.98]">
+                <span class="material-symbols-outlined">group_add</span>
+                <span>Create Group with Selected</span>
+            </button>
+        </div>
+        {% endif %}
+
+        {% for friendship in friendships %}
+        <label class="mn-card p-4 flex items-center justify-between border border-transparent cursor-pointer hover:border-mn-accent/20 transition-all has-[:checked]:bg-mn-accent/5 has-[:checked]:border-mn-accent/30">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-mn-accent flex items-center justify-center shadow-soft">
+                    <span class="text-mn-dark font-black text-lg">{{ friendship.friend.username|slice:":1"|upper }}</span>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark">{{ friendship.friend.get_full_name|default:friendship.friend.username }}</h3>
+                    <p class="text-xs text-mn-muted truncate max-w-[150px]">{{ friendship.friend.email }}</p>
+                </div>
+            </div>
+            <div class="relative flex items-center">
+                <input type="checkbox" name="friend_ids" value="{{ friendship.friend.id }}" class="peer w-6 h-6 rounded-lg border-2 border-mn-border dark:border-mn-border-dark bg-transparent checked:bg-mn-accent checked:border-mn-accent transition-all appearance-none cursor-pointer">
+                <span class="material-symbols-outlined absolute pointer-events-none opacity-0 peer-checked:opacity-100 text-mn-dark transition-opacity" style="font-size: 18px; left: 3px;">check</span>
+            </div>
+        </label>
+        {% empty %}
+        <div class="mn-card p-12 flex flex-col items-center justify-center text-center">
+            <div class="w-20 h-20 bg-mn-bg dark:bg-mn-bg-dark rounded-full flex items-center justify-center mb-4">
+                <span class="material-symbols-outlined text-mn-muted" style="font-size:36px;">group_off</span>
+            </div>
+            <h3 class="text-lg font-bold text-mn-text dark:text-mn-text-dark">No friends yet</h3>
+            <p class="text-mn-muted mt-2 text-sm">Add friends to start splitting expenses easily.</p>
+        </div>
+        {% endfor %}
+    </form>
+
+    <!-- Tab 2: Requests -->
+    <div id="tab-requests" class="hidden space-y-3">
+        {% for r in pending_requests %}
+        <div class="mn-card p-4 flex items-center justify-between border border-transparent">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-mn-dark text-mn-accent flex items-center justify-center shadow-soft border border-mn-accent/20">
+                    <span class="text-mn-accent font-black text-lg">{{ r.sender.username|slice:":1"|upper }}</span>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark">{{ r.sender.username }}</h3>
+                    <p class="text-[10px] text-mn-accent font-bold uppercase tracking-wider">Friend Request</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <form action="{% url 'split_expense:friend_request_action' r.id 'accept' %}" method="post">
+                    {% csrf_token %}
+                    <button class="w-10 h-10 rounded-xl bg-mn-accent flex items-center justify-center text-mn-dark shadow-soft active:scale-95 transition-all">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">check</span>
+                    </button>
+                </form>
+                <form action="{% url 'split_expense:friend_request_action' r.id 'reject' %}" method="post">
+                    {% csrf_token %}
+                    <button class="w-10 h-10 rounded-xl bg-mn-dark flex items-center justify-center text-mn-accent border border-mn-accent/20 shadow-soft active:scale-95 transition-all">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-12 text-mn-muted">
+            <p class="text-sm">No pending friend requests.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Tab 3: Sent -->
+    <div id="tab-sent" class="hidden space-y-3">
+        {% for r in sent_requests %}
+        <div class="mn-card p-4 flex items-center justify-between border border-transparent opacity-80">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-mn-bg dark:bg-mn-bg-dark flex items-center justify-center">
+                    <span class="text-mn-muted font-black text-lg">{{ r.receiver.username|slice:":1"|upper }}</span>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark">{{ r.receiver.username }}</h3>
+                    <p class="text-[10px] text-mn-muted font-bold uppercase tracking-wider">Awaiting Response</p>
+                </div>
+            </div>
+            <form action="{% url 'split_expense:friend_request_action' r.id 'cancel' %}" method="post">
+                {% csrf_token %}
+                <button class="px-3 py-1.5 rounded-lg bg-mn-dark text-mn-accent text-[10px] font-bold uppercase tracking-wider border border-mn-accent/20">Cancel</button>
+            </form>
+        </div>
+        {% endfor %}
+
+        {% for i in external_invites %}
+        <div class="mn-card p-4 flex items-center justify-between border border-transparent">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-mn-dark flex items-center justify-center border border-mn-accent/20">
+                    <span class="material-symbols-outlined text-mn-accent">mail</span>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-mn-text dark:text-mn-text-dark truncate w-40">{{ i.email }}</h3>
+                    <p class="text-[10px] text-mn-accent font-bold uppercase tracking-wider">External Invite</p>
+                </div>
+            </div>
+            <span class="text-[10px] text-mn-muted font-bold uppercase tracking-wider">Pending Signup</span>
+        </div>
+        {% endfor %}
+        
+        {% if not sent_requests and not external_invites %}
+        <div class="text-center py-12 text-mn-muted">
+            <p class="text-sm">No active sent invitations.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Add Friend Modal -->
+<div id="add-friend-modal" class="hidden fixed inset-0 z-[60]">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm animate-overlay" onclick="this.parentElement.classList.add('hidden')"></div>
+    <div class="absolute bottom-0 left-0 right-0 animate-slide-up">
+        <div class="max-w-lg mx-auto bg-mn-card dark:bg-mn-card-dark rounded-t-3xl p-6 pb-10 relative shadow-elevated border-t border-white/5">
+            <div class="w-12 h-1 bg-mn-border dark:bg-mn-border-dark rounded-full mx-auto mb-6"></div>
+            
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-mn-accent flex items-center justify-center shadow-soft">
+                    <span class="material-symbols-outlined text-mn-dark">person_add</span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-mn-text dark:text-mn-text-dark">Add Friend</h3>
+                    <p class="text-xs text-mn-muted">Enter email to send an invite.</p>
+                </div>
+            </div>
+
+            <form action="{% url 'split_expense:friend_request_send' %}" method="post" class="space-y-4">
+                {% csrf_token %}
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-mn-muted uppercase tracking-wider px-1">Friend's Email</label>
+                    <input type="email" name="email" placeholder="friend@example.com" required
+                           class="w-full px-4 py-3.5 rounded-2xl bg-mn-bg dark:bg-mn-bg-dark border-1.5 border-mn-border dark:border-mn-border-dark text-sm focus:border-mn-accent transition-all">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-4">
+                    <button type="button" onclick="document.getElementById('add-friend-modal').classList.add('hidden')"
+                            class="py-3.5 bg-mn-bg dark:bg-mn-bg-dark text-mn-text dark:text-mn-text-dark text-sm font-bold rounded-2xl hover:bg-mn-border dark:hover:bg-mn-border-dark transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="py-3.5 bg-mn-accent text-mn-dark text-sm font-bold rounded-2xl shadow-elevated hover:bg-mn-accent-hover transition-colors">
+                        Send Invite
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchFriendTab(tabId) {
+        ['friends', 'requests', 'sent'].forEach(id => {
+            document.getElementById('tab-' + id).classList.add('hidden');
+            let btn = document.getElementById('btn-' + id);
+            btn.classList.remove('bg-mn-bg', 'dark:bg-mn-dark', 'text-mn-text', 'dark:text-mn-text-dark');
+            btn.classList.add('text-mn-muted');
+        });
+        
+        document.getElementById('tab-' + tabId).classList.remove('hidden');
+        let activeBtn = document.getElementById('btn-' + tabId);
+        activeBtn.classList.remove('text-mn-muted');
+        activeBtn.classList.add('bg-mn-bg', 'dark:bg-mn-dark', 'text-mn-text', 'dark:text-mn-text-dark');
+    }
+
+    function validateFriendSelection() {
+        const checkboxes = document.querySelectorAll('input[name="friend_ids"]:checked');
+        if (checkboxes.length === 0) {
+            showToast("Please select at least one friend to create a group.", "error");
+            return false;
+        }
+        return true;
+    }
+</script>
+{% endblock %}

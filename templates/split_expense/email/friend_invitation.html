@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>You've been invited to Espere</title>
+</head>
+<body style="font-family: sans-serif; background-color: #f5f5f5; padding: 40px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <div style="background-color: #1A1A1A; padding: 30px; text-align: center;">
+            <h1 style="color: #C8E64A; margin: 0;">Espere</h1>
+        </div>
+        <div style="padding: 40px;">
+            <h2 style="color: #1A1A1A; margin-top: 0;">Hi there!</h2>
+            <p style="color: #666666; font-size: 16px; line-height: 1.6;">
+                <strong>{{ inviter.username }}</strong> has invited you to join them on <strong>Espere</strong>, a modern expense and split tracker.
+            </p>
+            <p style="color: #666666; font-size: 16px; line-height: 1.6;">
+                By joining Espere, you can easily split bills with friends, track your monthly budgets, and keep your finances in check.
+            </p>
+            <div style="text-align: center; margin: 40px 0;">
+                <a href="{{ invite_url }}" style="background-color: #C8E64A; color: #1A1A1A; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Create Account</a>
+            </div>
+            <p style="color: #999999; font-size: 14px;">
+                If you weren't expecting this, you can safely ignore this email.
+            </p>
+        </div>
+        <div style="background-color: #FAFAFA; padding: 20px; text-align: center; border-top: 1px solid #EEEEEE;">
+            <p style="color: #999999; font-size: 12px; margin: 0;">&copy; 2026 Espere. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

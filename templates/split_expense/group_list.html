@@ -5,12 +5,24 @@
 
 {% block top_bar %}
 <!-- Header Skeleton -->
-<div data-skeleton class="animate-pulse px-5 pt-6 pb-2 lg:px-6 lg:pt-8 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark lg:hidden"></div>
-        <div class="w-28 h-6 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+<div data-skeleton class="animate-pulse px-5 pt-6 pb-2 lg:px-6 lg:pt-8 space-y-4">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark lg:hidden"></div>
+            <div class="w-28 h-6 bg-mn-card dark:bg-mn-card-dark rounded"></div>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark"></div>
+            <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark"></div>
+        </div>
     </div>
-    <div class="w-10 h-10 rounded-xl bg-mn-card dark:bg-mn-card-dark"></div>
+    <!-- Friends Skeleton -->
+    <div class="flex items-center gap-3 overflow-hidden">
+        <div class="w-14 h-14 rounded-2xl bg-mn-card dark:bg-mn-card-dark flex-shrink-0"></div>
+        <div class="w-14 h-14 rounded-2xl bg-mn-card dark:bg-mn-card-dark flex-shrink-0"></div>
+        <div class="w-14 h-14 rounded-2xl bg-mn-card dark:bg-mn-card-dark flex-shrink-0"></div>
+        <div class="w-14 h-14 rounded-2xl bg-mn-card dark:bg-mn-card-dark flex-shrink-0"></div>
+    </div>
 </div>
 <!-- Header Content -->
 <div data-content class="hidden">
@@ -21,10 +33,16 @@
         </a>
         <h1 class="text-xl font-bold text-mn-text dark:text-mn-text-dark">Split Groups</h1>
     </div>
-    <a href="{% url 'split_expense:group_create' %}" class="w-10 h-10 lg:w-auto lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl bg-mn-accent flex items-center justify-center lg:gap-2 hover:bg-mn-accent-hover transition-colors shadow-soft">
-        <span class="material-symbols-outlined icon-md text-mn-dark">add</span>
-        <span class="hidden lg:inline text-sm font-semibold text-mn-dark">New Group</span>
-    </a>
+    <div class="flex items-center gap-2">
+        <a href="{% url 'split_expense:friend_list' %}" class="w-10 h-10 lg:w-auto lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl bg-mn-dark flex items-center justify-center lg:gap-2 hover:opacity-90 transition-colors shadow-soft border border-mn-accent/20">
+            <span class="material-symbols-outlined icon-md text-mn-accent">people</span>
+            <span class="hidden lg:inline text-sm font-semibold text-mn-accent">Friends</span>
+        </a>
+        <a href="{% url 'split_expense:group_create' %}" class="w-10 h-10 lg:w-auto lg:px-4 lg:py-2.5 rounded-xl lg:rounded-2xl bg-mn-accent flex items-center justify-center lg:gap-2 hover:bg-mn-accent-hover transition-colors shadow-soft">
+            <span class="material-symbols-outlined icon-md text-mn-dark">add</span>
+            <span class="hidden lg:inline text-sm font-semibold text-mn-dark">New Group</span>
+        </a>
+    </div>
 </div>
 </div>
 {% endblock %}

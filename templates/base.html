@@ -285,6 +285,10 @@
                 <span class="material-symbols-outlined icon-md">groups</span>
                 <span>Split Groups</span>
             </a>
+            <a href="{% url 'split_expense:friend_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium transition-all duration-200 {% active_nav request '^/groups/friends' %}" id="sidenav-friends">
+                <span class="material-symbols-outlined icon-md">person_add</span>
+                <span>Friends</span>
+            </a>
         </nav>
 
         <!-- Bottom section -->
@@ -314,8 +318,8 @@
             {% block top_bar %}{% endblock %}
 
             <!-- Flash Messages -->
-            {% if messages %}
             <div id="flash-messages" class="px-4 pt-2 space-y-2 lg:px-6">
+            {% if messages %}
                 {% for message in messages %}
                 <div class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium animate-fade-in shadow-soft bg-mn-dark text-mn-accent">
                     {% if message.tags == 'success' %}
@@ -330,8 +334,8 @@
                     <span>{{ message }}</span>
                 </div>
                 {% endfor %}
-            </div>
             {% endif %}
+            </div>
 
             <!-- Page Content -->
             <main class="{% block main_class %}px-4 py-4 lg:px-6{% endblock %}">
@@ -422,6 +426,32 @@
 
         window.toggleDarkMode = function() {
             document.documentElement.classList.toggle('dark');
+        }
+
+        window.showToast = function(message, type = 'error') {
+            const container = document.getElementById('flash-messages');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = 'flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium animate-fade-in shadow-soft bg-mn-dark text-mn-accent';
+            
+            let icon = 'info';
+            if (type === 'success') icon = 'check_circle';
+            else if (type === 'error') icon = 'error';
+            else if (type === 'warning') icon = 'warning';
+            
+            toast.innerHTML = `
+                <span class="material-symbols-outlined icon-sm">${icon}</span>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto-hide after 4 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
 
         // Bottom Nav Hide/Show on Scroll

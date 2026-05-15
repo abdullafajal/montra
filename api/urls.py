@@ -38,8 +38,15 @@ urlpatterns = [
     path("split/groups/", views.SplitGroupListAPIView.as_view(), name="split_group_list"),
     path("split/groups/<int:pk>/", views.SplitGroupDetailAPIView.as_view(), name="split_group_detail"),
     path("split/groups/<int:pk>/expenses/", views.SplitExpenseCreateAPIView.as_view(), name="split_expense_create"),
+    path("split/groups/<int:group_pk>/expenses/<int:pk>/", views.SplitExpenseDetailAPIView.as_view(), name="split_expense_detail"),
     path("split/groups/<int:pk>/settle/", views.SplitSettleAPIView.as_view(), name="split_settle"),
     path("split/groups/<int:pk>/members/", views.SplitAddMemberAPIView.as_view(), name="split_add_member"),
     path("split/groups/<int:pk>/remind/", views.SplitReminderAPIView.as_view(), name="split_remind"),
     path("split/users/search/", views.SplitUserSearchAPIView.as_view(), name="split_user_search"),
+    
+    # Friends
+    path("split/friends/", views.SplitFriendListAPIView.as_view(), name="split_friend_list"),
+    path("split/friends/action/", views.SplitFriendActionAPIView.as_view(), name="split_friend_action"),
+    path("split/invitations/", views.SplitInvitationListAPIView.as_view(), name="split_invitation_list"),
+    path("split/invitations/<int:pk>/action/", views.SplitInvitationActionAPIView.as_view(), name="split_invitation_action"),
 ]

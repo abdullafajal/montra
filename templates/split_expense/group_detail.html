@@ -251,6 +251,15 @@
             <span class="material-symbols-outlined icon-sm">person_add</span>
             <span class="font-semibold text-sm">Add New Member</span>
         </a>
+
+        <!-- Leave Group Button -->
+        <form method="post" action="{% url 'split_expense:group_leave' group.id %}" onsubmit="return confirm('Are you sure you want to leave this group? Your balance must be zero.')" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="w-full py-3 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors">
+                <span class="material-symbols-outlined icon-sm">logout</span>
+                <span class="font-semibold text-sm">Leave Group</span>
+            </button>
+        </form>
     </div>
 
     <!-- Tab 3: Simplified Debts / Settle Up -->

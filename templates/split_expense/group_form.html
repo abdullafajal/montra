@@ -63,7 +63,25 @@
                            placeholder="e.g. Goa Trip, Office Lunch" 
                            class="w-full px-4 py-3 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-white/5 rounded-xl shadow-sm focus:ring-2 focus:ring-mn-accent focus:border-transparent transition-all outline-none text-mn-text dark:text-mn-text-dark font-medium placeholder-gray-400 dark:placeholder-gray-600">
                 </div>
-                <p class="text-xs text-mn-muted mt-2">{% if is_edit %}Update the group name above.{% else %}You can add members after creating the group.{% endif %}</p>
+                
+                {% if preselected_friends %}
+                <div class="mt-6 space-y-3">
+                    <label class="block text-xs font-bold text-mn-muted uppercase tracking-wider px-1">Inviting {{ preselected_friends|length }} Friends</label>
+                    <div class="flex flex-wrap gap-2">
+                        {% for f in preselected_friends %}
+                        <div class="flex items-center gap-2 px-3 py-1.5 bg-mn-bg dark:bg-mn-bg-dark rounded-xl border border-mn-accent/20">
+                            <input type="hidden" name="friend_ids" value="{{ f.friend.id }}">
+                            <div class="w-6 h-6 rounded-lg bg-mn-accent flex items-center justify-center text-[10px] font-black text-mn-dark">
+                                {{ f.friend.username|slice:":1"|upper }}
+                            </div>
+                            <span class="text-xs font-bold text-mn-text dark:text-mn-text-dark">{{ f.friend.username }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <p class="text-xs text-mn-muted mt-4">{% if is_edit %}Update the group name above.{% else %}You can add more members after creating the group.{% endif %}</p>
             </div>
         </div>
 

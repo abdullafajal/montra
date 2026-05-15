@@ -4,9 +4,101 @@ from django.views.generic import ListView, CreateView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.urls import reverse
-from .models import Group, GroupMember, Expense, Settlement
-from .services import create_expense, calculate_simplified_debts, create_settlement, delete_expense, update_expense, remove_member
+from .models import Group, GroupMember, Expense, Settlement, Friendship, FriendRequest, ExternalFriendInvitation
+from .services import (
+    create_expense, calculate_simplified_debts, create_settlement, 
+    delete_expense, update_expense, remove_member,
+    send_friend_request, accept_friend_request, process_external_invite_signup
+)
 from decimal import Decimal, InvalidOperation
+from django.utils.html import strip_tags
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.conf import settings
+from django.core.cache import cache
+from django.utils import timezone
+
+class FriendListView(LoginRequiredMixin, ListView):
+    template_name = 'split_expense/friend_list.html'
+    context_object_name = 'friendships'
+    
+    def get_queryset(self):
+        return Friendship.objects.filter(user=self.request.user).select_related('friend')
+        
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['pending_requests'] = FriendRequest.objects.filter(receiver=self.request.user, is_accepted=False)
+        context['sent_requests'] = FriendRequest.objects.filter(sender=self.request.user, is_accepted=False)
+        context['external_invites'] = ExternalFriendInvitation.objects.filter(sender=self.request.user, is_joined=False)
+        return context
+
+class SendFriendRequestView(LoginRequiredMixin, View):
+    def post(self, request):
+        email = request.POST.get('email', '').strip()
+        if not email:
+            messages.error(request, "Email is required.")
+            return redirect('split_expense:friend_list')
+            
+        try:
+            result = send_friend_request(request.user, email, request=request)
+            if isinstance(result, FriendRequest):
+                messages.success(request, f"Friend request sent to {result.receiver.username}.")
+            else:
+                # External invite
+                invite_url = request.build_absolute_uri(reverse('accounts:register'))
+                subject = f"{request.user.username} invited you to join Espere"
+                html_message = render_to_string('split_expense/email/friend_invitation.html', {
+                    'inviter': request.user,
+                    'invite_url': invite_url
+                })
+                plain_message = strip_tags(html_message)
+                
+                try:
+                    send_mail(
+                        subject,
+                        plain_message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                        html_message=html_message,
+                        fail_silently=False
+                    )
+                    messages.success(request, f"Invitation sent to {email}. They will be your friend once they sign up.")
+                except Exception as e:
+                    messages.warning(request, f"Invitation created for {email}, but failed to send email.")
+                    
+        except ValidationError as e:
+            messages.error(request, str(e.message))
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            
+        return redirect('split_expense:friend_list')
+
+class FriendRequestActionView(LoginRequiredMixin, View):
+    def post(self, request, request_id, action):
+        friend_request = get_object_or_404(FriendRequest, id=request_id)
+        
+        if action == 'accept':
+            if friend_request.receiver != request.user:
+                messages.error(request, "Not authorized.")
+            else:
+                accept_friend_request(friend_request)
+                messages.success(request, f"You are now friends with {friend_request.sender.username}!")
+                
+        elif action == 'reject':
+            if friend_request.receiver != request.user:
+                messages.error(request, "Not authorized.")
+            else:
+                friend_request.delete()
+                messages.success(request, "Friend request rejected.")
+                
+        elif action == 'cancel':
+            if friend_request.sender != request.user:
+                messages.error(request, "Not authorized.")
+            else:
+                friend_request.delete()
+                messages.success(request, "Friend request cancelled.")
+                
+        return redirect('split_expense:friend_list')
 
 class GroupListView(LoginRequiredMixin, ListView):
     model = Group
@@ -39,18 +131,40 @@ class GroupCreateView(LoginRequiredMixin, View):
     template_name = 'split_expense/group_form.html'
     
     def get(self, request):
-        return render(request, self.template_name)
+        friend_ids = request.GET.getlist('friend_ids')
+        friends = []
+        if friend_ids:
+            friends = Friendship.objects.filter(user=request.user, friend_id__in=friend_ids).select_related('friend')
+            
+        return render(request, self.template_name, {
+            'preselected_friends': friends
+        })
         
     def post(self, request):
         name = request.POST.get('name')
+        friend_ids = request.POST.getlist('friend_ids')
+        
         if not name:
             messages.error(request, "Group name is required.")
-            return render(request, self.template_name)
+            return redirect('split_expense:group_create')
             
         group = Group.objects.create(name=name, created_by=request.user)
-        # Add creator to the group by default as accepted
+        # Add creator as accepted
         GroupMember.objects.create(group=group, user=request.user, is_accepted=True)
-        messages.success(request, f"Group '{name}' created successfully.")
+        
+        # Add pre-selected friends
+        count = 0
+        for fid in friend_ids:
+            friendship = Friendship.objects.filter(user=request.user, friend_id=fid).first()
+            if friendship:
+                GroupMember.objects.create(group=group, user=friendship.friend, is_accepted=False)
+                count += 1
+                
+        if count > 0:
+            messages.success(request, f"Group '{name}' created and {count} friends invited.")
+        else:
+            messages.success(request, f"Group '{name}' created successfully.")
+            
         return redirect('split_expense:group_detail', pk=group.pk)
 
 class GroupDetailView(LoginRequiredMixin, DetailView):
@@ -105,7 +219,8 @@ class ExpenseCreateView(LoginRequiredMixin, View):
         
         try:
             amount = Decimal(amount_str)
-            paid_by = group.members.get(id=paid_by_id)
+            paid_by = request.user
+
             
             splits_data = []
             if split_type in ['exact', 'percentage']:
@@ -150,10 +265,7 @@ class SettlementCreateView(LoginRequiredMixin, View):
             amount = Decimal(amount_str)
             paid_to = group.members.get(id=paid_to_id)
             
-            if paid_by_id:
-                paid_by = group.members.get(id=paid_by_id)
-            else:
-                paid_by = request.user
+            paid_by = request.user
                 
             if request.user != paid_by and request.user != paid_to and request.user != group.created_by:
                 raise Exception("You don't have permission to record this settlement.")
@@ -183,7 +295,14 @@ class GroupMemberAddView(LoginRequiredMixin, View):
             messages.error(request, "You are not a member of this group.")
             return redirect('split_expense:group_list')
             
-        return render(request, self.template_name, {'group': group})
+        # Get friends who are NOT already members or invited
+        member_ids = group.members.values_list('id', flat=True)
+        friends = Friendship.objects.filter(user=request.user).exclude(friend_id__in=member_ids).select_related('friend')
+        
+        return render(request, self.template_name, {
+            'group': group,
+            'friends': friends
+        })
         
     def post(self, request, group_id):
         group = get_object_or_404(Group, pk=group_id)
@@ -191,102 +310,37 @@ class GroupMemberAddView(LoginRequiredMixin, View):
             messages.error(request, "You are not a member of this group.")
             return redirect('split_expense:group_list')
             
-        identifier = request.POST.get('identifier', '').strip()
-        if not identifier:
-            messages.error(request, "Please enter an email or username.")
+        user_ids = request.POST.getlist('user_ids')
+        if not user_ids:
+            messages.error(request, "Please select at least one friend to invite.")
             return redirect('split_expense:group_member_add', group_id=group.id)
             
-        # Try to find by username first, then by email
-        user_to_add = User.objects.filter(username=identifier).first()
-        if not user_to_add:
-            user_to_add = User.objects.filter(email__iexact=identifier).first()
-            
-        is_new_user = False
-        if not user_to_add:
-            # Check if it's a valid email Address
-            try:
-                validate_email(identifier)
-                # They don't have an account -> send special token invite
-                from .models import GroupInvitation
-                if GroupInvitation.objects.filter(group=group, email__iexact=identifier).exists():
-                    messages.info(request, f"An invite is already pending for {identifier}.")
-                    return redirect('split_expense:group_detail', pk=group.id)
+        count = 0
+        for uid in user_ids:
+            friendship = Friendship.objects.filter(user=request.user, friend_id=uid).first()
+            if friendship:
+                user_to_add = friendship.friend
+                if not group.members.filter(id=user_to_add.id).exists():
+                    GroupMember.objects.create(group=group, user=user_to_add, is_accepted=False)
+                    count += 1
                     
-                invite = GroupInvitation.objects.create(
-                    group=group,
-                    email=identifier,
-                    invited_by=request.user
-                )
-                
-                # Send the special email using the new template
-                from django.urls import reverse
-                from django.template.loader import render_to_string
-                from django.utils.html import strip_tags
-                from django.core.mail import send_mail
-                from django.conf import settings
-                
-                invite_url = request.build_absolute_uri(reverse('split_expense:invitation_special_link', args=[invite.token]))
-                subject = f"{request.user.username} invited you to join '{group.name}' on Espere"
-                html_message = render_to_string('split_expense/email/group_invitation.html', {
-                    'group': group,
-                    'inviter': request.user,
-                    'invite_url': invite_url
-                })
-                plain_message = strip_tags(html_message)
-                
-                try:
-                    send_mail(
-                        subject,
-                        plain_message,
-                        settings.DEFAULT_FROM_EMAIL,
-                        [identifier],
-                        html_message=html_message,
-                        fail_silently=False
-                    )
-                    messages.success(request, f"Invitation link successfully sent to {identifier}!")
-                except Exception as e:
-                    print(f"Failed to send invite email: {e}")
-                    messages.warning(request, f"Created invite for {identifier} but failed to send the email.")
-                
-                return redirect('split_expense:group_detail', pk=group.id)
-                
-            except ValidationError:
-                messages.error(request, f"User '{identifier}' not found and is not a valid email address.")
-                return redirect('split_expense:group_member_add', group_id=group.id)
-                
-        # If user IS found (already registered user)
-        if group.members.filter(id=user_to_add.id).exists():
-            messages.info(request, f"{user_to_add.username} is already a member.")
-            return redirect('split_expense:group_member_add', group_id=group.id)
-            
-        GroupMember.objects.create(group=group, user=user_to_add, is_accepted=False)
+                    # Send invitation email
+                    try:
+                        subject = f"{request.user.username} invited you to '{group.name}'"
+                        invite_url = request.build_absolute_uri(reverse('split_expense:invitations'))
+                        html_message = render_to_string('split_expense/email/group_invitation.html', {
+                            'inviter': request.user,
+                            'group': group,
+                            'invite_url': invite_url,
+                        })
+                        send_mail(subject, strip_tags(html_message), settings.DEFAULT_FROM_EMAIL, [user_to_add.email], html_message=html_message, fail_silently=True)
+                    except Exception:
+                        pass
         
-        # Send actual invitation email for registered user
-        try:
-            from django.urls import reverse
-            from django.template.loader import render_to_string
-            from django.utils.html import strip_tags
-            from django.core.mail import send_mail
-            from django.conf import settings
-            
-            subject = f"{request.user.username} invited you to '{group.name}'"
-            groups_url = request.build_absolute_uri(reverse('split_expense:invitations'))
-            
-            html_message = render_to_string('split_expense/email/payment_reminder.html', {
-                'title': "Group Invitation",
-                'preheader': "You've been invited to join a split group.",
-                'group_name': group.name,
-                'message': f"<strong>{request.user.username}</strong> has invited you to join <strong>{group.name}</strong> on Espere to split expenses.<br><br>Log into your account to accept the invitation.",
-                'action_url': groups_url,
-                'action_text': "View Invitations",
-                'footer_text': "If you weren't expecting this, you can safely ignore this email."
-            })
-            plain_message = strip_tags(html_message)
-            
-            send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL, [user_to_add.email], html_message=html_message, fail_silently=True)
-            messages.success(request, f"Invitation sent to {user_to_add.username}.")
-        except Exception:
-            messages.success(request, f"Added {user_to_add.username} to the group. They will need to accept the invite.")
+        if count > 0:
+            messages.success(request, f"Invitations sent to {count} friends.")
+        else:
+            messages.info(request, "No new invitations sent.")
             
         return redirect('split_expense:group_detail', pk=group.id)
 
@@ -348,9 +402,6 @@ class InvitationAcceptSpecialView(View):
             
             return redirect('accounts:register')
 
-from django.template.loader import render_to_string
-from django.core.cache import cache
-
 class SendReminderView(LoginRequiredMixin, View):
     def post(self, request, group_id):
         group = get_object_or_404(Group, pk=group_id)
@@ -362,7 +413,6 @@ class SendReminderView(LoginRequiredMixin, View):
         user_to_remind = get_object_or_404(User, id=user_to_remind_id)
         
         # Rate limit: 3 per 24 hours
-        from django.utils import timezone
         now = timezone.now()
 
         membership = GroupMember.objects.filter(group=group, user=user_to_remind).first()
@@ -381,9 +431,21 @@ class SendReminderView(LoginRequiredMixin, View):
         push_body_text = f"Just a reminder regarding your balance of {amount_owed}. Please settle up!"
         
         pushed = False
-        from accounts.models import DeviceToken
+        from accounts.models import DeviceToken, Notification
         from config.firebase import send_push_notification
         
+        # Create in-app notification
+        Notification.objects.create(
+            user=user_to_remind,
+            title=subject,
+            message=push_body_text,
+            data={
+                "action": "open_split_group",
+                "group_id": str(group.id),
+                "group_name": group.name,
+            }
+        )
+
         tokens = DeviceToken.objects.filter(user=user_to_remind)
         if tokens.exists():
             for dt in tokens:
@@ -547,7 +609,8 @@ class ExpenseUpdateView(LoginRequiredMixin, View):
         
         try:
             amount = Decimal(amount_str)
-            paid_by = group.members.get(id=paid_by_id)
+            paid_by = request.user
+
             
             splits_data = []
             if split_type in ['exact', 'percentage']:
@@ -642,3 +705,35 @@ class GroupMemberRemoveView(LoginRequiredMixin, View):
         
         return redirect('split_expense:group_detail', pk=group.id)
 
+class GroupLeaveView(LoginRequiredMixin, View):
+    def post(self, request, group_id):
+        group = get_object_or_404(Group, pk=group_id)
+        try:
+            from .services import leave_group
+            leave_group(group, request.user)
+            messages.success(request, f"You have left the group '{group.name}'.")
+        except ValidationError as e:
+            messages.error(request, str(e.message))
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            
+        return redirect('split_expense:group_list')
+
+
+class GroupDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        group = get_object_or_404(Group, pk=pk)
+        
+        # Check if owner
+        if group.created_by != request.user:
+            messages.error(request, "Only the group owner can delete the group.")
+            return redirect('split_expense:group_detail', pk=group.id)
+            
+        # Check if all members are settled
+        if GroupMember.objects.filter(group=group).exclude(net_balance=0).exists():
+            messages.error(request, "Cannot delete group with outstanding balances.")
+            return redirect('split_expense:group_detail', pk=group.id)
+            
+        group.delete()
+        messages.success(request, f"Group '{group.name}' has been deleted.")
+        return redirect('split_expense:group_list')

@@ -16,6 +16,8 @@ from django.utils.dateparse import parse_datetime, parse_date
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.core.exceptions import ValidationError
+from django.conf import settings
 
 from accounts.models import UserProfile
 from transactions.models import Transaction, Category, Budget, SavingsGoal
@@ -204,7 +206,11 @@ class DeviceTokenAPIView(View):
             return JsonResponse({"error": "Token is required."}, status=400)
             
         from accounts.models import DeviceToken
-        DeviceToken.objects.get_or_create(user=request.api_user, token=token)
+        # Use update_or_create to avoid IntegrityError if token already exists
+        DeviceToken.objects.update_or_create(
+            token=token,
+            defaults={'user': request.api_user}
+        )
         return JsonResponse({"message": "Token registered successfully."})
 
 
@@ -233,6 +239,14 @@ class RegisterAPIView(View):
         if User.objects.filter(email__iexact=email).exists():
             errors["email"] = "Email already registered."
 
+        # Email validation
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            errors["email"] = "Enter a valid email address."
+
         if errors:
             return JsonResponse({"errors": errors}, status=400)
 
@@ -240,13 +254,19 @@ class RegisterAPIView(View):
             username=username,
             email=email,
             password=password,
-            is_active=True,  # For mobile, skip email verification
+            is_active=False, # Enforce email verification
         )
         UserProfile.objects.get_or_create(user=user)
-        token = APIToken.generate_token(user)
+        
+        # Send verification email
+        from accounts.models import EmailVerificationToken
+        from accounts.views import _send_verification_email
+        token = EmailVerificationToken.objects.create(user=user)
+        _send_verification_email(request, user, token)
+
         return JsonResponse({
-            "token": token.key,
-            "user": _user_profile_data(user),
+            "message": "Registration successful. Please verify your email to log in.",
+            "email": email
         }, status=201)
 
 
@@ -921,7 +941,7 @@ class SavingsDetailAPIView(View):
 # ---------------------------------------------------------------------------
 # Split Expense
 # ---------------------------------------------------------------------------
-from split_expense.models import Group, GroupMember, Expense, ExpenseSplit, Settlement
+from split_expense.models import Group, GroupMember, Expense, ExpenseSplit, Settlement, Friendship, FriendRequest, ExternalFriendInvitation, GroupInvitation
 from split_expense.services import create_expense, create_settlement, calculate_simplified_debts
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -942,6 +962,8 @@ class SplitGroupListAPIView(View):
                 "net_balance": str(m.net_balance),
                 "is_accepted": m.is_accepted,
                 "total_members": m.group.members.count(),
+                "color": m.group.color,
+                "icon": m.group.icon,
             })
         return JsonResponse({"groups": data})
 
@@ -954,28 +976,57 @@ class SplitGroupListAPIView(View):
         if not name:
             return JsonResponse({"error": "Group name is required."}, status=400)
 
-        group = Group.objects.create(name=name, created_by=user)
+        # De-duplication check for offline sync
+        local_id = data.get("local_id")
+        if local_id:
+            existing = Group.objects.filter(created_by=user, local_id=local_id).first()
+            if existing:
+                return JsonResponse({
+                    "group": {
+                        "id": existing.id, 
+                        "name": existing.name, 
+                        "total_members": existing.members.count(),
+                        "color": existing.color,
+                        "icon": existing.icon
+                    },
+                    "already_existed": True
+                }, status=200)
+
+        color = data.get("color", "#C8E64A")
+        icon = data.get("icon", "groups")
+        group = Group.objects.create(name=name, created_by=user, local_id=local_id, color=color, icon=icon)
         GroupMember.objects.create(group=group, user=user, is_accepted=True)
 
-        # Add other members by username
-        member_usernames = data.get("members", [])
-        for uname in member_usernames:
-            uname = uname.strip()
-            if uname and uname != user.username:
-                try:
+        # Add other members by ID or username
+        member_ids = data.get("member_ids", [])
+        member_list = data.get("members", [])
+        
+        # Merge them into a single processing loop
+        all_members = list(member_ids) + list(member_list)
+        
+        for item in all_members:
+            try:
+                if isinstance(item, int) or (isinstance(item, str) and item.isdigit()):
+                    mid = int(item)
+                    if mid == user.id: continue
+                    member_user = User.objects.get(id=mid)
+                else:
+                    uname = item.strip()
+                    if not uname or uname == user.username:
+                        continue
                     member_user = User.objects.get(username=uname)
-                    GroupMember.objects.get_or_create(
-                        group=group, user=member_user,
-                        defaults={"is_accepted": True}
-                    )
-                except User.DoesNotExist:
-                    pass  # Skip unknown users
+                
+                GroupMember.objects.get_or_create(group=group, user=member_user, defaults={"is_accepted": False})
+            except (User.DoesNotExist, AttributeError, ValueError):
+                pass
 
         return JsonResponse({
             "group": {
                 "id": group.id,
                 "name": group.name,
                 "total_members": group.members.count(),
+                "color": group.color,
+                "icon": group.icon,
             }
         }, status=201)
 
@@ -991,26 +1042,36 @@ class SplitGroupDetailAPIView(View):
         except GroupMember.DoesNotExist:
             return JsonResponse({"error": "Group not found"}, status=404)
             
+        if not membership.is_accepted and membership.group.created_by != user:
+            return JsonResponse({
+                "error": "Invitation pending",
+                "is_pending": True,
+                "group": {
+                    "id": membership.group.id,
+                    "name": membership.group.name,
+                    "invited_by": membership.group.created_by.username
+                }
+            }, status=403)
+            
         group = membership.group
         
         # members
         members_data = []
-        for gm in GroupMember.objects.filter(group=group).select_related("user"):
-            members_data.append({
-                "id": gm.user.id,
-                "username": gm.user.username,
-                "net_balance": str(gm.net_balance),
-            })
+        for gm in GroupMember.objects.filter(group=group).select_related("user", "user__userprofile"):
+            u_data = get_user_data(request, gm.user)
+            u_data["net_balance"] = str(gm.net_balance)
+            members_data.append(u_data)
             
         # expenses
         expenses_data = []
-        for ex in Expense.objects.filter(group=group).select_related("paid_by").order_by("-date", "-created_at")[:50]:
+        for ex in Expense.objects.filter(group=group).select_related("paid_by", "created_by").order_by("-date", "-created_at")[:50]:
             expenses_data.append({
                 "id": ex.id,
                 "description": ex.description,
                 "amount": str(ex.amount),
                 "paid_by": ex.paid_by.username,
                 "paid_by_id": ex.paid_by.id,
+                "created_by_id": ex.created_by.id if ex.created_by else ex.paid_by.id,
                 "split_type": ex.split_type,
                 "date": ex.date.isoformat(),
             })
@@ -1042,6 +1103,9 @@ class SplitGroupDetailAPIView(View):
             "group": {
                 "id": group.id,
                 "name": group.name,
+                "color": group.color,
+                "icon": group.icon,
+                "created_by_id": group.created_by_id,
                 "my_net_balance": str(membership.net_balance),
                 "members": members_data,
                 "recent_expenses": expenses_data,
@@ -1049,6 +1113,50 @@ class SplitGroupDetailAPIView(View):
                 "settlements": settlements_data,
             }
         })
+
+    @method_decorator(api_login_required)
+    def patch(self, request, pk):
+        user = request.api_user
+        data = parse_json_body(request)
+        try:
+            membership = GroupMember.objects.select_related("group").get(group_id=pk, user=user)
+        except GroupMember.DoesNotExist:
+            return JsonResponse({"error": "Group not found"}, status=404)
+            
+        group = membership.group
+        if "name" in data: group.name = data["name"]
+        if "color" in data: group.color = data["color"]
+        if "icon" in data: group.icon = data["icon"]
+        group.save()
+        
+        return JsonResponse({
+            "group": {
+                "id": group.id,
+                "name": group.name,
+                "color": group.color,
+                "icon": group.icon,
+            }
+        })
+
+    @method_decorator(api_login_required)
+    def delete(self, request, pk):
+        user = request.api_user
+        try:
+            membership = GroupMember.objects.select_related("group").get(group_id=pk, user=user)
+        except GroupMember.DoesNotExist:
+            return JsonResponse({"error": "Group not found"}, status=404)
+            
+        group = membership.group
+        # Owner only
+        if group.created_by != user:
+            return JsonResponse({"error": "Only the group owner can delete the group."}, status=403)
+            
+        # Check if all members are settled
+        if GroupMember.objects.filter(group=group).exclude(net_balance=0).exists():
+            return JsonResponse({"error": "Cannot delete group with outstanding balances."}, status=400)
+            
+        group.delete()
+        return JsonResponse({"status": "ok"})
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -1064,6 +1172,9 @@ class SplitExpenseCreateAPIView(View):
             membership = GroupMember.objects.select_related("group").get(group_id=pk, user=user)
         except GroupMember.DoesNotExist:
             return JsonResponse({"error": "Group not found."}, status=404)
+            
+        if not membership.is_accepted and membership.group.created_by != user:
+            return JsonResponse({"error": "You must accept the invitation first."}, status=403)
 
         group = membership.group
         description = data.get("description", "").strip()
@@ -1078,15 +1189,7 @@ class SplitExpenseCreateAPIView(View):
             return JsonResponse({"error": "Invalid amount."}, status=400)
 
         split_type = data.get("split_type", "equal")
-        paid_by_id = data.get("paid_by_id")
-
-        if paid_by_id:
-            try:
-                paid_by_user = User.objects.get(id=paid_by_id)
-            except User.DoesNotExist:
-                paid_by_user = user
-        else:
-            paid_by_user = user
+        paid_by_user = user
 
         # Build splits_data for exact/percentage
         splits_data = None
@@ -1102,14 +1205,31 @@ class SplitExpenseCreateAPIView(View):
                     return JsonResponse({"error": f"User {s.get('user_id')} not found."}, status=404)
                 splits_data.append({"user": member_user, "value": Decimal(str(s["value"]))})
 
+        # De-duplication check
+        local_id = data.get("local_id")
+        if local_id:
+            existing = Expense.objects.filter(group=group, local_id=local_id).first()
+            if existing:
+                return JsonResponse({
+                    "expense": {
+                        "id": existing.id,
+                        "description": existing.description,
+                        "amount": str(existing.amount),
+                        "paid_by": existing.paid_by.username,
+                    },
+                    "already_existed": True
+                }, status=200)
+
         try:
             expense = create_expense(
                 group=group,
                 paid_by=paid_by_user,
+                created_by=user,
                 amount=amount,
                 description=description,
                 split_type=split_type,
                 splits_data=splits_data,
+                local_id=local_id
             )
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
@@ -1122,6 +1242,110 @@ class SplitExpenseCreateAPIView(View):
                 "paid_by": expense.paid_by.username,
             }
         }, status=201)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SplitExpenseDetailAPIView(View):
+    """GET /api/split/groups/<group_pk>/expenses/<pk>/ — detail, edit, delete."""
+
+    @method_decorator(api_login_required)
+    def get(self, request, group_pk, pk):
+        try:
+            expense = Expense.objects.select_related("paid_by", "group").get(group_id=group_pk, id=pk)
+        except Expense.DoesNotExist:
+            return JsonResponse({"error": "Expense not found."}, status=404)
+        
+        splits = expense.splits.select_related("user").all()
+        
+        return JsonResponse({
+            "expense": {
+                "id": expense.id,
+                "description": expense.description,
+                "amount": str(expense.amount),
+                "date": expense.created_at.isoformat(),
+                "paid_by": {
+                    "id": expense.paid_by.id,
+                    "username": expense.paid_by.username,
+                    "display_name": expense.paid_by.get_full_name() or expense.paid_by.username
+                },
+                "created_by_id": expense.created_by.id if expense.created_by else expense.paid_by.id,
+                "split_type": expense.split_type,
+                "splits": [
+                    {
+                        "user_id": s.user.id,
+                        "username": s.user.username,
+                        "display_name": s.user.get_full_name() or s.user.username,
+                        "amount": str(s.amount_owed),
+                        "value": str(s.percentage) if expense.split_type == 'percentage' else str(s.amount_owed)
+                    }
+                    for s in splits
+                ]
+            }
+        })
+
+    @method_decorator(api_login_required)
+    def patch(self, request, group_pk, pk):
+        user = request.api_user
+        data = parse_json_body(request)
+        
+        try:
+            expense = Expense.objects.select_related("group").get(group_id=group_pk, id=pk)
+        except Expense.DoesNotExist:
+            return JsonResponse({"error": "Expense not found."}, status=404)
+        # Permission: Only the creator (or paid_by for legacy) can edit
+        owner_id = expense.created_by_id if expense.created_by else expense.paid_by_id
+        if user.id != owner_id:
+             return JsonResponse({"error": "Permission denied. You can only edit your own entries."}, status=403)
+
+        description = data.get("description", expense.description).strip()
+        try:
+            amount = Decimal(str(data.get("amount", expense.amount)))
+        except (InvalidOperation, ValueError):
+            return JsonResponse({"error": "Invalid amount."}, status=400)
+            
+        split_type = data.get("split_type", expense.split_type)
+        
+        splits_data = None
+        if split_type in ("exact", "percentage"):
+            raw_splits = data.get("splits", [])
+            if raw_splits:
+                splits_data = []
+                for s in raw_splits:
+                    try:
+                        member_user = User.objects.get(id=s["user_id"])
+                        splits_data.append({"user": member_user, "value": Decimal(str(s["value"]))})
+                    except User.DoesNotExist:
+                        return JsonResponse({"error": f"User {s.get('user_id')} not found."}, status=404)
+        
+        from split_expense.services import update_expense
+        try:
+            new_exp = update_expense(expense, expense.paid_by, amount, description, split_type, splits_data)
+            return JsonResponse({
+                "expense": {
+                    "id": new_exp.id,
+                    "description": new_exp.description,
+                    "amount": str(new_exp.amount),
+                }
+            })
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+    @method_decorator(api_login_required)
+    def delete(self, request, group_pk, pk):
+        user = request.api_user
+        try:
+            expense = Expense.objects.select_related("group").get(group_id=group_pk, id=pk)
+        except Expense.DoesNotExist:
+            return JsonResponse({"error": "Expense not found."}, status=404)
+        if user.id != (expense.created_by_id if expense.created_by else expense.paid_by_id):
+             return JsonResponse({"error": "Permission denied. You can only delete your own entries."}, status=403)
+
+        from split_expense.services import delete_expense
+        try:
+            delete_expense(expense)
+            return JsonResponse({"message": "Expense deleted."})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -1156,12 +1380,23 @@ class SplitSettleAPIView(View):
         except User.DoesNotExist:
             return JsonResponse({"error": "User not found."}, status=404)
 
+        # De-duplication check
+        local_id = data.get("local_id")
+        if local_id:
+            existing = Settlement.objects.filter(group=group, local_id=local_id).first()
+            if existing:
+                return JsonResponse({
+                    "settlement": {"id": existing.id, "amount": str(existing.amount)},
+                    "already_existed": True
+                }, status=200)
+
         try:
             settlement = create_settlement(
                 group=group,
                 paid_by=user,
                 paid_to=paid_to_user,
                 amount=amount,
+                local_id=local_id
             )
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
@@ -1189,29 +1424,27 @@ class SplitAddMemberAPIView(View):
             return JsonResponse({"error": "Group not found."}, status=404)
 
         group = membership.group
+        user_ids = data.get("user_ids", [])
         identifier = data.get("identifier", "").strip()
-        if not identifier:
-            return JsonResponse({"error": "Username or email is required."}, status=400)
 
-        # Try username then email
-        user_to_add = User.objects.filter(username=identifier).first()
-        if not user_to_add:
-            user_to_add = User.objects.filter(email__iexact=identifier).first()
+        from split_expense.services import invite_user_to_group
 
-        if not user_to_add:
-            return JsonResponse({"error": f"User '{identifier}' not found."}, status=404)
+        if not user_ids and identifier:
+            success, msg = invite_user_to_group(group, identifier, user, request=request)
+            if success:
+                return JsonResponse({"status": "ok", "message": msg})
+            else:
+                return JsonResponse({"error": msg}, status=400)
 
-        if group.members.filter(id=user_to_add.id).exists():
-            return JsonResponse({"error": f"{user_to_add.username} is already a member."}, status=400)
+        if not user_ids:
+            return JsonResponse({"error": "No users selected."}, status=400)
 
-        GroupMember.objects.create(group=group, user=user_to_add, is_accepted=False)
-        return JsonResponse({
-            "message": f"Invitation sent to {user_to_add.username}.",
-            "member": {
-                "id": user_to_add.id,
-                "username": user_to_add.username,
-            }
-        }, status=201)
+        count = 0
+        for uid in user_ids:
+            success, msg = invite_user_to_group(group, str(uid), user, request=request)
+            if success: count += 1
+
+        return JsonResponse({"status": "ok", "count": count})
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -1328,3 +1561,172 @@ class SplitReminderAPIView(View):
 
         msg = "Push notification sent" if pushed else "Reminder email sent"
         return JsonResponse({"message": f"{msg} to {user_to_remind.username}."})
+
+@method_decorator(csrf_exempt, name="dispatch")
+def get_user_data(request, user):
+    """Helper to serialize user with full name and avatar."""
+    name = f"{user.first_name} {user.last_name}".strip()
+    display_name = name if name else user.username
+    
+    avatar_url = None
+    try:
+        if user.userprofile.avatar:
+            avatar_url = request.build_absolute_uri(user.userprofile.avatar.url)
+    except:
+        pass
+        
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "display_name": display_name,
+        "avatar_url": avatar_url,
+        "initial": (name[0] if name else user.username[0]).upper()
+    }
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SplitFriendListAPIView(View):
+    """GET /api/split/friends/ — list friends & requests. POST — invite friend."""
+
+    @method_decorator(api_login_required)
+    def get(self, request):
+        user = request.api_user
+        
+        friends = Friendship.objects.filter(user=user).select_related('friend')
+        pending_received = FriendRequest.objects.filter(receiver=user, is_accepted=False).select_related('sender')
+        pending_sent = FriendRequest.objects.filter(sender=user, is_accepted=False).select_related('receiver')
+        
+        from split_expense.models import ExternalFriendInvitation
+        external_invites = ExternalFriendInvitation.objects.filter(sender=user)
+        
+        return JsonResponse({
+            "friends": [get_user_data(request, f.friend) for f in friends],
+            "pending_received": [
+                {
+                    "id": r.id, 
+                    "sender": get_user_data(request, r.sender)
+                }
+                for r in pending_received
+            ],
+            "pending_sent": [
+                {
+                    "id": r.id, 
+                    "receiver": get_user_data(request, r.receiver)
+                }
+                for r in pending_sent
+            ] + [
+                {
+                    "id": f"ext_{inv.id}",
+                    "receiver": {
+                        "id": -1,
+                        "username": inv.email,
+                        "display_name": inv.email,
+                        "email": inv.email,
+                        "initial": "?",
+                        "is_external": True
+                    }
+                }
+                for inv in external_invites
+            ]
+        })
+
+    @method_decorator(api_login_required)
+    def post(self, request):
+        user = request.api_user
+        data = parse_json_body(request)
+        email = data.get("email", "").strip()
+        
+        if not email:
+            return JsonResponse({"error": "Email is required."}, status=400)
+            
+        from split_expense.services import send_friend_request
+        try:
+            req = send_friend_request(user, email, request=request)
+            if isinstance(req, FriendRequest):
+                return JsonResponse({
+                    "message": f"Friend request sent to {req.receiver.username}.",
+                    "user": get_user_data(request, req.receiver)
+                }, status=201)
+            else:
+                return JsonResponse({
+                    "message": f"Invitation sent to {email}. They will be added as a friend once they join Espere."
+                }, status=201)
+        except ValidationError as e:
+            return JsonResponse({"error": str(e.message)}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SplitFriendActionAPIView(View):
+    """POST /api/split/friends/action/ {request_id, action: 'accept'|'reject'|'cancel'}"""
+
+    @method_decorator(api_login_required)
+    def post(self, request):
+        user = request.api_user
+        data = parse_json_body(request)
+        rid = data.get("request_id")
+        action = data.get("action")
+        
+        try:
+            if action in ('accept', 'reject'):
+                req = FriendRequest.objects.get(id=rid, receiver=user)
+                if action == 'accept':
+                    Friendship.objects.get_or_create(user=user, friend=req.sender)
+                    Friendship.objects.get_or_create(user=req.sender, friend=user)
+                    req.is_accepted = True
+                    req.save()
+                    return JsonResponse({"message": "Friend request accepted."})
+                else:
+                    req.delete()
+                    return JsonResponse({"message": "Friend request rejected."})
+            elif action == 'cancel':
+                req = FriendRequest.objects.get(id=rid, sender=user)
+                req.delete()
+                return JsonResponse({"message": "Friend request cancelled."})
+            else:
+                return JsonResponse({"error": "Invalid action."}, status=400)
+        except FriendRequest.DoesNotExist:
+            return JsonResponse({"error": "Request not found."}, status=404)
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SplitInvitationListAPIView(View):
+    """GET /api/split/invitations/ — list pending group invitations."""
+
+    @method_decorator(api_login_required)
+    def get(self, request):
+        user = request.api_user
+        invites = GroupMember.objects.filter(user=user, is_accepted=False).select_related('group', 'group__created_by')
+        
+        return JsonResponse({
+            "invitations": [
+                {
+                    "id": inv.id,
+                    "group_id": inv.group.id,
+                    "group_name": inv.group.name,
+                    "invited_by": inv.group.created_by.username
+                }
+                for inv in invites
+            ]
+        })
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SplitInvitationActionAPIView(View):
+    """POST /api/split/invitations/<pk>/action/ {action: 'accept'|'reject'}"""
+
+    @method_decorator(api_login_required)
+    def post(self, request, pk):
+        user = request.api_user
+        data = parse_json_body(request)
+        action = data.get("action")
+        
+        try:
+            membership = GroupMember.objects.get(id=pk, user=user)
+            if action == 'accept':
+                membership.is_accepted = True
+                membership.save()
+                return JsonResponse({"message": "Invitation accepted."})
+            else:
+                membership.delete()
+                return JsonResponse({"message": "Invitation rejected."})
+        except GroupMember.DoesNotExist:
+            return JsonResponse({"error": "Invitation not found."}, status=404)

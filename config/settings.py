@@ -214,6 +214,8 @@ X_FRAME_OPTIONS = 'ALLOWALL'
 CSRF_TRUSTED_ORIGINS = [
     "https://espere.in",
 ]
+
+SITE_DOMAIN = os.environ.get("SITE_DOMAIN", "https://montra.pythonanywhere.com/")
 CSRF_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_SECURE = True
 
