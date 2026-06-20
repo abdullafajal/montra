@@ -9,6 +9,8 @@ urlpatterns = [
     path("auth/login/", views.LoginAPIView.as_view(), name="login"),
     path("auth/logout/", views.LogoutAPIView.as_view(), name="logout"),
     path("auth/register/", views.RegisterAPIView.as_view(), name="register"),
+    path("auth/verify-otp/", views.VerifyOTPAPIView.as_view(), name="verify_otp"),
+    path("auth/resend-otp/", views.ResendOTPAPIView.as_view(), name="resend_otp"),
     path("auth/profile/", views.ProfileAPIView.as_view(), name="profile"),
 
     path("devices/register/", views.DeviceTokenAPIView.as_view(), name="device_register"),

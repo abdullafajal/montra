@@ -271,6 +271,80 @@ class RegisterAPIView(View):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
+class VerifyOTPAPIView(View):
+    """POST /api/auth/verify-otp/ — verifies email using 6-digit OTP."""
+
+    def post(self, request):
+        data = parse_json_body(request)
+        email = data.get("email", "").strip()
+        otp = data.get("otp", "").strip()
+
+        if not email or not otp:
+            return JsonResponse({"error": "Email and OTP are required."}, status=400)
+
+        from accounts.models import EmailVerificationToken
+        try:
+            token_obj = EmailVerificationToken.objects.get(user__email__iexact=email, token=otp)
+
+            user = token_obj.user
+            user.is_active = True
+            user.save()
+            token_obj.delete()
+
+            # Process pending split group invitations
+            try:
+                from split_expense.services import process_external_invite_signup
+                process_external_invite_signup(user)
+            except Exception as e:
+                print(f"Error processing invitations: {e}")
+
+            # Auto-login after successful verification
+            from .authentication import APIToken
+            api_token = APIToken.generate_token(user)
+            return JsonResponse({
+                "message": "Email verified successfully.",
+                "token": api_token.key,
+                "user": _user_profile_data(user),
+            })
+        except EmailVerificationToken.DoesNotExist:
+            return JsonResponse({"error": "Invalid or expired OTP."}, status=400)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ResendOTPAPIView(View):
+    """POST /api/auth/resend-otp/ — resends email using 6-digit OTP."""
+
+    def post(self, request):
+        data = parse_json_body(request)
+        email = data.get("email", "").strip()
+
+        if not email:
+            return JsonResponse({"error": "Email is required."}, status=400)
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            # Prevent email enumeration
+            return JsonResponse({"message": "If the email is registered, a new OTP has been sent."}, status=200)
+
+        if user.is_active:
+            return JsonResponse({"error": "Email is already verified."}, status=400)
+
+        from accounts.models import EmailVerificationToken
+        from accounts.views import _send_verification_email
+
+        # Delete old tokens
+        EmailVerificationToken.objects.filter(user=user).delete()
+
+        # Create and send new token
+        token = EmailVerificationToken.objects.create(user=user)
+        _send_verification_email(request, user, token)
+
+        return JsonResponse({
+            "message": "If the email is registered, a new OTP has been sent."
+        }, status=200)
+
+@method_decorator(csrf_exempt, name="dispatch")
 class ProfileAPIView(View):
     """GET/PUT /api/auth/profile/ — get or update profile."""
 
@@ -516,6 +590,8 @@ class TransactionListAPIView(View):
         # Pagination
         page = int(request.GET.get("page", 1))
         per_page = int(request.GET.get("per_page", 50))
+        if show_all:
+            per_page = 5000  # Emulate fetching all time transactions
         total = qs.count()
         offset = (page - 1) * per_page
         transactions = qs[offset:offset + per_page]
@@ -732,6 +808,16 @@ class BudgetListAPIView(View):
     def get(self, request):
         user = request.api_user
         budgets = Budget.objects.filter(user=user).select_related("category")
+        
+        # Add month filter
+        month_param = request.GET.get("month", "")
+        if month_param:
+            try:
+                y, m = map(int, month_param.split("-"))
+                budgets = budgets.filter(month__year=y, month__month=m)
+            except ValueError:
+                pass
+
         data = []
         for b in budgets:
             data.append({

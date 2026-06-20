@@ -47,13 +47,18 @@ class UserProfile(models.Model):
         return f"{self.user.username}'s Profile"
 
 
+import random
+
+def generate_otp():
+    return str(random.randint(100000, 999999))
+
 class EmailVerificationToken(models.Model):
     """One-time token for verifying a user's email address."""
     MAX_ATTEMPTS = 3
     COOLDOWN_HOURS = 24
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="verification_token")
-    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    token = models.CharField(max_length=6, default=generate_otp)
     attempt_count = models.PositiveIntegerField(default=1)
     last_sent_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -92,7 +97,7 @@ class PasswordResetToken(models.Model):
     COOLDOWN_HOURS = 24
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="password_reset_token")
-    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    token = models.CharField(max_length=6, default=generate_otp)
     attempt_count = models.PositiveIntegerField(default=1)
     last_sent_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -41,12 +41,11 @@ def _send_email_sync(subject, plain_message, from_email, recipient_list, html_me
 
 
 def _send_verification_email(request, user, token):
-    """Send a verification email with a link to activate the account."""
-    verify_url = request.build_absolute_uri(f"/accounts/verify/{token.token}/")
+    """Send a verification email with the OTP to activate the account."""
     subject = "Verify your Espere account"
     html_message = render_to_string("accounts/verify_email.html", {
         "user": user,
-        "verify_url": verify_url,
+        "otp": token.token,
     })
     plain_message = strip_tags(html_message)
     _send_email_sync(subject, plain_message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message)
