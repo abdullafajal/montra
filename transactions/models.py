@@ -19,10 +19,16 @@ class Category(models.Model):
         ("family_restroom", "Family"), ("child_care", "Baby"),
     ]
 
+    TYPE_CHOICES = [
+        ("income", "Income"),
+        ("expense", "Expense"),
+    ]
+
     name = models.CharField(max_length=50)
     icon = models.CharField(max_length=30, default="category")
     color = models.CharField(max_length=7, default="#C8E64A")  # hex
     is_system = models.BooleanField(default=False)
+    type = models.CharField(max_length=7, choices=TYPE_CHOICES, default="expense")
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
 
     class Meta:

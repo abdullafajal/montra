@@ -4,24 +4,24 @@ from transactions.models import Category
 
 
 DEFAULT_CATEGORIES = [
-    {"name": "Food & Dining", "icon": "restaurant", "color": "#C8E64A"},
-    {"name": "Transportation", "icon": "directions_car", "color": "#C8E64A"},
-    {"name": "Housing", "icon": "home", "color": "#C8E64A"},
-    {"name": "Entertainment", "icon": "movie", "color": "#C8E64A"},
-    {"name": "Shopping", "icon": "shopping_bag", "color": "#C8E64A"},
-    {"name": "Healthcare", "icon": "local_hospital", "color": "#C8E64A"},
-    {"name": "Education", "icon": "school", "color": "#C8E64A"},
-    {"name": "Salary", "icon": "payments", "color": "#C8E64A"},
-    {"name": "Freelance", "icon": "work", "color": "#C8E64A"},
-    {"name": "Investment", "icon": "trending_up", "color": "#C8E64A"},
-    {"name": "Gift", "icon": "redeem", "color": "#C8E64A"},
-    {"name": "Bills & Utilities", "icon": "receipt_long", "color": "#C8E64A"},
-    {"name": "Travel", "icon": "flight", "color": "#C8E64A"},
-    {"name": "Clothing", "icon": "checkroom", "color": "#C8E64A"},
-    {"name": "Fitness", "icon": "fitness_center", "color": "#C8E64A"},
-    {"name": "Coffee", "icon": "coffee", "color": "#C8E64A"},
-    {"name": "Pets", "icon": "pets", "color": "#C8E64A"},
-    {"name": "Other", "icon": "category", "color": "#C8E64A"},
+    {"name": "Food & Dining", "icon": "restaurant", "color": "#C8E64A", "type": "expense"},
+    {"name": "Transportation", "icon": "directions_car", "color": "#C8E64A", "type": "expense"},
+    {"name": "Housing", "icon": "home", "color": "#C8E64A", "type": "expense"},
+    {"name": "Entertainment", "icon": "movie", "color": "#C8E64A", "type": "expense"},
+    {"name": "Shopping", "icon": "shopping_bag", "color": "#C8E64A", "type": "expense"},
+    {"name": "Healthcare", "icon": "local_hospital", "color": "#C8E64A", "type": "expense"},
+    {"name": "Education", "icon": "school", "color": "#C8E64A", "type": "expense"},
+    {"name": "Salary", "icon": "payments", "color": "#C8E64A", "type": "income"},
+    {"name": "Freelance", "icon": "work", "color": "#C8E64A", "type": "income"},
+    {"name": "Investment", "icon": "trending_up", "color": "#C8E64A", "type": "income"},
+    {"name": "Gift", "icon": "redeem", "color": "#C8E64A", "type": "income"},
+    {"name": "Bills & Utilities", "icon": "receipt_long", "color": "#C8E64A", "type": "expense"},
+    {"name": "Travel", "icon": "flight", "color": "#C8E64A", "type": "expense"},
+    {"name": "Clothing", "icon": "checkroom", "color": "#C8E64A", "type": "expense"},
+    {"name": "Fitness", "icon": "fitness_center", "color": "#C8E64A", "type": "expense"},
+    {"name": "Coffee", "icon": "coffee", "color": "#C8E64A", "type": "expense"},
+    {"name": "Pets", "icon": "pets", "color": "#C8E64A", "type": "expense"},
+    {"name": "Other", "icon": "category", "color": "#C8E64A", "type": "expense"},
 ]
 
 
@@ -35,7 +35,7 @@ class Command(BaseCommand):
             obj, was_created = Category.objects.get_or_create(
                 name=cat["name"],
                 is_system=True,
-                defaults={"icon": cat["icon"], "color": cat["color"]},
+                defaults={"icon": cat["icon"], "color": cat["color"], "type": cat["type"]},
             )
             if was_created:
                 created += 1
@@ -47,8 +47,11 @@ class Command(BaseCommand):
                 if obj.color != cat["color"]:
                     obj.color = cat["color"]
                     changed = True
+                if getattr(obj, "type", "expense") != cat["type"]:
+                    obj.type = cat["type"]
+                    changed = True
                 if changed:
-                    obj.save(update_fields=["icon", "color"])
+                    obj.save(update_fields=["icon", "color", "type"])
                     updated += 1
         self.stdout.write(self.style.SUCCESS(
             f"Seeded {created} new, updated {updated} existing ({len(DEFAULT_CATEGORIES)} total)."

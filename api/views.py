@@ -101,6 +101,7 @@ def _category_to_dict(cat):
         "icon": cat.icon,
         "color": cat.color,
         "is_system": cat.is_system,
+        "type": cat.type,
     }
 
 
@@ -753,10 +754,15 @@ class CategoryListAPIView(View):
         if not color.startswith("#") or len(color) != 7:
             color = "#C8E64A"
 
+        category_type = data.get("type", "expense")
+        if category_type not in ["income", "expense"]:
+            category_type = "expense"
+
         category = Category.objects.create(
             name=name,
             icon=icon,
             color=color,
+            type=category_type,
             user=user,
             is_system=False,
         )
@@ -781,6 +787,8 @@ class CategoryDetailAPIView(View):
             category.icon = data["icon"]
         if "color" in data:
             category.color = data["color"]
+        if "type" in data and data["type"] in ["income", "expense"]:
+            category.type = data["type"]
         
         category.save()
         return JsonResponse({"category": _category_to_dict(category)})
