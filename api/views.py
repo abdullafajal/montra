@@ -822,6 +822,23 @@ class BudgetListAPIView(View):
         if month_param:
             try:
                 y, m = map(int, month_param.split("-"))
+                month_date = date(y, m, 1)
+                
+                # Auto carry-forward logic
+                exists = budgets.filter(month__year=y, month__month=m).exists()
+                if not exists:
+                    last_budget = Budget.objects.filter(user=user, month__lt=month_date).order_by("-month").first()
+                    if last_budget:
+                        last_month = last_budget.month
+                        past_budgets = Budget.objects.filter(user=user, month__year=last_month.year, month__month=last_month.month)
+                        for pb in past_budgets:
+                            Budget.objects.create(
+                                user=user,
+                                category=pb.category,
+                                amount=pb.amount,
+                                month=month_date
+                            )
+                
                 budgets = budgets.filter(month__year=y, month__month=m)
             except ValueError:
                 pass
@@ -864,14 +881,13 @@ class BudgetListAPIView(View):
         month_date = timezone.localdate().replace(day=1)
         if month_str:
             try:
-                from datetime import datetime
                 month_date = datetime.strptime(month_str, "%Y-%m-%d").date().replace(day=1)
             except (ValueError, TypeError):
                 pass
 
         budget, created = Budget.objects.update_or_create(
-            user=user, category=category,
-            defaults={"amount": amount, "month": month_date},
+            user=user, category=category, month=month_date,
+            defaults={"amount": amount},
         )
         return JsonResponse({
             "budget": {

@@ -78,23 +78,21 @@ class Budget(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ["user", "category"]
+        unique_together = ["user", "category", "month"]
         ordering = ["-created_at"]
 
     def __str__(self):
         return f"Budget: {self.category} — {self.amount}"
 
     def get_spent(self):
-        """Get total spent in this category for the CURRENT month."""
+        """Get total spent in this category for the budget's specific month."""
         from django.db.models import Sum
-        from django.utils import timezone
-        now = timezone.localdate()
         total = Transaction.objects.filter(
             user=self.user,
             category=self.category,
             type="expense",
-            date__year=now.year,
-            date__month=now.month,
+            date__year=self.month.year,
+            date__month=self.month.month,
         ).aggregate(total=Sum("amount"))["total"]
         return total or 0
 
