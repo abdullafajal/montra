@@ -1774,6 +1774,12 @@ class SplitFriendActionAPIView(View):
                     req.delete()
                     return JsonResponse({"message": "Friend request rejected."})
             elif action == 'cancel':
+                if str(rid).startswith('ext_'):
+                    from split_expense.models import ExternalFriendInvitation
+                    ext_id = int(str(rid).replace('ext_', ''))
+                    inv = ExternalFriendInvitation.objects.get(id=ext_id, sender=user)
+                    inv.delete()
+                    return JsonResponse({"message": "Invitation revoked."})
                 req = FriendRequest.objects.get(id=rid, sender=user)
                 req.delete()
                 return JsonResponse({"message": "Friend request cancelled."})
