@@ -1789,6 +1789,16 @@ class SplitFriendActionAPIView(View):
                 else:
                     req.delete()
                     return JsonResponse({"message": "Friend request rejected."})
+            elif action == 'remove':
+                friend_id = data.get("friend_id")
+                try:
+                    from django.contrib.auth.models import User
+                    friend = User.objects.get(id=friend_id)
+                    Friendship.objects.filter(user=user, friend=friend).delete()
+                    Friendship.objects.filter(user=friend, friend=user).delete()
+                    return JsonResponse({"message": "Friend removed."})
+                except User.DoesNotExist:
+                    return JsonResponse({"error": "User not found."}, status=404)
             elif action == 'cancel':
                 if str(rid).startswith('ext_'):
                     from split_expense.models import ExternalFriendInvitation
