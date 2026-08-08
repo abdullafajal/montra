@@ -378,6 +378,53 @@ class ProfileAPIView(View):
         profile.save()
 
         return JsonResponse({"user": _user_profile_data(user)})
+        
+@method_decorator(csrf_exempt, name="dispatch")
+class ChangePasswordAPIView(View):
+    """POST /api/auth/password/change/ — change user password."""
+
+    @method_decorator(api_login_required)
+    def post(self, request):
+        data = parse_json_body(request)
+        user = request.api_user
+        
+        old_password = data.get("old_password")
+        new_password = data.get("new_password")
+        
+        if not old_password or not new_password:
+            return JsonResponse({"error": "Old and new passwords are required."}, status=400)
+            
+        if not user.check_password(old_password):
+            return JsonResponse({"error": "Incorrect old password."}, status=400)
+            
+        user.set_password(new_password)
+        user.save()
+        return JsonResponse({"message": "Password changed successfully."})
+
+@method_decorator(csrf_exempt, name="dispatch")
+class AvatarUploadAPIView(View):
+    """POST /api/auth/profile/avatar/ — upload avatar."""
+
+    @method_decorator(api_login_required)
+    def post(self, request):
+        if 'image' not in request.FILES:
+            return JsonResponse({"error": "No image file provided."}, status=400)
+            
+        image = request.FILES['image']
+        user = request.api_user
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        
+        # Delete old avatar if exists
+        if profile.avatar:
+            try:
+                import os
+                if os.path.isfile(profile.avatar.path):
+                    os.remove(profile.avatar.path)
+            except Exception:
+                pass
+                
+        profile.avatar.save(image.name, image, save=True)
+        return JsonResponse({"user": _user_profile_data(user)})
 
 
 # ---------------------------------------------------------------------------
@@ -1074,6 +1121,7 @@ class SplitGroupListAPIView(View):
                 "total_members": m.group.members.count(),
                 "color": m.group.color,
                 "icon": m.group.icon,
+                "created_by_id": m.group.created_by_id,
             })
         return JsonResponse({"groups": data})
 

@@ -12,6 +12,8 @@ urlpatterns = [
     path("auth/verify-otp/", views.VerifyOTPAPIView.as_view(), name="verify_otp"),
     path("auth/resend-otp/", views.ResendOTPAPIView.as_view(), name="resend_otp"),
     path("auth/profile/", views.ProfileAPIView.as_view(), name="profile"),
+    path("auth/profile/avatar/", views.AvatarUploadAPIView.as_view(), name="avatar_upload"),
+    path("auth/password/change/", views.ChangePasswordAPIView.as_view(), name="change_password"),
 
     path("devices/register/", views.DeviceTokenAPIView.as_view(), name="device_register"),
 
