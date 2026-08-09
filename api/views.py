@@ -1530,13 +1530,26 @@ class SplitSettleAPIView(View):
             return JsonResponse({"error": "Invalid amount."}, status=400)
 
         paid_to_id = data.get("paid_to_id")
+        paid_by_id = data.get("paid_by_id")
+        
         if not paid_to_id:
             return JsonResponse({"error": "paid_to_id is required."}, status=400)
 
         try:
             paid_to_user = User.objects.get(id=paid_to_id)
         except User.DoesNotExist:
-            return JsonResponse({"error": "User not found."}, status=404)
+            return JsonResponse({"error": "Receiver user not found."}, status=404)
+            
+        if paid_by_id:
+            try:
+                paid_by_user = User.objects.get(id=paid_by_id)
+            except User.DoesNotExist:
+                return JsonResponse({"error": "Payer user not found."}, status=404)
+        else:
+            paid_by_user = user
+            
+        if user != paid_by_user and user != paid_to_user and user != group.created_by:
+            return JsonResponse({"error": "You don't have permission to record this settlement."}, status=403)
 
         # De-duplication check
         local_id = data.get("local_id")
@@ -1551,7 +1564,7 @@ class SplitSettleAPIView(View):
         try:
             settlement = create_settlement(
                 group=group,
-                paid_by=user,
+                paid_by=paid_by_user,
                 paid_to=paid_to_user,
                 amount=amount,
                 local_id=local_id
