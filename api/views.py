@@ -1424,7 +1424,11 @@ class SplitExpenseCreateAPIView(View):
                     member_user = User.objects.get(id=s["user_id"])
                 except User.DoesNotExist:
                     return JsonResponse({"error": f"User {s.get('user_id')} not found."}, status=404)
-                splits_data.append({"user": member_user, "value": Decimal(str(s["value"]))})
+                try:
+                    val_dec = Decimal(str(s.get("value", 0)) or "0")
+                except Exception:
+                    return JsonResponse({"error": f"Invalid value for user {member_user.id}"}, status=400)
+                splits_data.append({"user": member_user, "value": val_dec})
 
         # De-duplication check
         local_id = data.get("local_id")
@@ -1539,7 +1543,11 @@ class SplitExpenseDetailAPIView(View):
                 for s in raw_splits:
                     try:
                         member_user = User.objects.get(id=s["user_id"])
-                        splits_data.append({"user": member_user, "value": Decimal(str(s["value"]))})
+                        try:
+                            val_dec = Decimal(str(s.get("value", 0)) or "0")
+                        except Exception:
+                            return JsonResponse({"error": f"Invalid value for user {member_user.id}"}, status=400)
+                        splits_data.append({"user": member_user, "value": val_dec})
                     except User.DoesNotExist:
                         return JsonResponse({"error": f"User {s.get('user_id')} not found."}, status=404)
         
