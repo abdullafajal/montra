@@ -1354,7 +1354,13 @@ class SplitExpenseCreateAPIView(View):
             return JsonResponse({"error": "Invalid amount."}, status=400)
 
         split_type = data.get("split_type", "equal")
+        paid_by_id = data.get("paid_by")
         paid_by_user = user
+        if paid_by_id:
+            try:
+                paid_by_user = User.objects.get(id=paid_by_id)
+            except User.DoesNotExist:
+                return JsonResponse({"error": "paid_by user not found."}, status=404)
 
         # Build splits_data for exact/percentage
         splits_data = None
@@ -1482,9 +1488,17 @@ class SplitExpenseDetailAPIView(View):
                     except User.DoesNotExist:
                         return JsonResponse({"error": f"User {s.get('user_id')} not found."}, status=404)
         
+        paid_by_user = expense.paid_by
+        paid_by_id = data.get("paid_by")
+        if paid_by_id:
+            try:
+                paid_by_user = User.objects.get(id=paid_by_id)
+            except User.DoesNotExist:
+                return JsonResponse({"error": "paid_by user not found."}, status=404)
+
         from split_expense.services import update_expense
         try:
-            new_exp = update_expense(expense, expense.paid_by, amount, description, split_type, splits_data)
+            new_exp = update_expense(expense, paid_by_user, amount, description, split_type, splits_data)
             return JsonResponse({
                 "expense": {
                     "id": new_exp.id,
