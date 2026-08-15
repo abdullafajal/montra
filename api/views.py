@@ -1227,8 +1227,7 @@ class SplitGroupDetailAPIView(View):
                 "id": ex.id,
                 "description": ex.description,
                 "amount": str(ex.amount),
-                "paid_by": ex.paid_by.username,
-                "paid_by_id": ex.paid_by.id,
+                "paid_by": get_user_data(request, ex.paid_by),
                 "created_by_id": ex.created_by.id if ex.created_by else ex.paid_by.id,
                 "split_type": ex.split_type,
                 "date": ex.date.isoformat(),
@@ -1239,9 +1238,9 @@ class SplitGroupDetailAPIView(View):
         debts_data = []
         for d in debts:
             debts_data.append({
-                "from_user": d["from"].username,
+                "from_user": get_user_data(request, d["from"])["display_name"],
                 "from_user_id": d["from"].id,
-                "to_user": d["to"].username,
+                "to_user": get_user_data(request, d["to"])["display_name"],
                 "to_user_id": d["to"].id,
                 "amount": str(d["amount"]),
             })
@@ -1251,8 +1250,8 @@ class SplitGroupDetailAPIView(View):
         for s in Settlement.objects.filter(group=group).select_related("paid_by", "paid_to").order_by("-date")[:20]:
             settlements_data.append({
                 "id": s.id,
-                "paid_by": s.paid_by.username,
-                "paid_to": s.paid_to.username,
+                "paid_by": get_user_data(request, s.paid_by)["display_name"],
+                "paid_to": get_user_data(request, s.paid_to)["display_name"],
                 "amount": str(s.amount),
                 "date": s.date.isoformat(),
             })
