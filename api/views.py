@@ -493,16 +493,22 @@ class DashboardAPIView(View):
             line_labels.append(d.strftime("%d"))
             line_values.append(float(daily))
 
-        # Budget warnings
-        budgets = Budget.objects.filter(user=user).select_related("category")
-        budget_warnings = [
-            {
-                "category": b.category.name,
-                "icon": b.category.icon,
-                "color": b.category.color
-            }
-            for b in budgets if b.is_exceeded()
-        ]
+        # Budget warnings and overall monthly budget
+        current_budgets = Budget.objects.filter(user=user, month__year=today.year, month__month=today.month).select_related("category")
+        budget_warnings = []
+        monthly_budget_limit = Decimal("0")
+        monthly_budget_spent = Decimal("0")
+        
+        for b in current_budgets:
+            spent = b.get_spent()
+            monthly_budget_limit += b.amount
+            monthly_budget_spent += spent
+            if spent > b.amount:
+                budget_warnings.append({
+                    "category": b.category.name,
+                    "icon": b.category.icon,
+                    "color": b.category.color
+                })
 
         # Insights
         insights = _generate_insights(user, today, income, expenses)
@@ -514,6 +520,8 @@ class DashboardAPIView(View):
             "monthly_income": str(income),
             "monthly_expenses": str(expenses),
             "monthly_savings": str(income - expenses),
+            "monthly_budget_limit": str(monthly_budget_limit),
+            "monthly_budget_spent": str(monthly_budget_spent),
             "currency_symbol": currency_symbol,
             "recent_transactions": [_transaction_to_dict(t, currency_symbol) for t in recent],
             "pie_labels": pie_labels,
