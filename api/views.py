@@ -1434,18 +1434,13 @@ class SplitExpenseDetailAPIView(View):
                 "description": expense.description,
                 "amount": str(expense.amount),
                 "date": expense.created_at.isoformat(),
-                "paid_by": {
-                    "id": expense.paid_by.id,
-                    "username": expense.paid_by.username,
-                    "display_name": expense.paid_by.get_full_name() or expense.paid_by.username
-                },
+                "paid_by": get_user_data(request, expense.paid_by),
                 "created_by_id": expense.created_by.id if expense.created_by else expense.paid_by.id,
                 "split_type": expense.split_type,
                 "splits": [
                     {
+                        **get_user_data(request, s.user),
                         "user_id": s.user.id,
-                        "username": s.user.username,
-                        "display_name": s.user.get_full_name() or s.user.username,
                         "amount": str(s.amount_owed),
                         "value": str(s.percentage) if expense.split_type == 'percentage' else str(s.amount_owed)
                     }
