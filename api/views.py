@@ -643,6 +643,42 @@ class TransactionListAPIView(View):
                 today = timezone.localdate()
                 qs = qs.filter(date__year=today.year, date__month=today.month)
 
+        # Calculate statistics
+        qs_expenses = qs.filter(type="expense")
+        qs_incomes = qs.filter(type="income")
+        
+        from django.db.models import Sum
+        total_spend = qs_expenses.aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        total_income = qs_incomes.aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        
+        today = timezone.localdate()
+        # Ensure we filter today's date in local time
+        today_spend = qs_expenses.filter(date__year=today.year, date__month=today.month, date__day=today.day).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        
+        avg_daily = Decimal("0")
+        if show_all:
+            earliest = qs_expenses.order_by("date").first()
+            if earliest:
+                days = (today - timezone.localdate(earliest.date)).days + 1
+                avg_daily = total_spend / days if days > 0 else total_spend
+        else:
+            if month_param:
+                try:
+                    y, m = map(int, month_param.split("-"))
+                    target_month = date(y, m, 1)
+                except ValueError:
+                    target_month = today.replace(day=1)
+            else:
+                target_month = today.replace(day=1)
+                
+            import calendar
+            if target_month.year == today.year and target_month.month == today.month:
+                days = today.day
+                avg_daily = total_spend / days if days > 0 else total_spend
+            else:
+                _, days_in_month = calendar.monthrange(target_month.year, target_month.month)
+                avg_daily = total_spend / days_in_month
+
         # Pagination
         page = int(request.GET.get("page", 1))
         per_page = int(request.GET.get("per_page", 50))
@@ -662,6 +698,10 @@ class TransactionListAPIView(View):
             "page": page,
             "per_page": per_page,
             "has_next": offset + per_page < total,
+            "total_spend": str(total_spend),
+            "total_income": str(total_income),
+            "today_spend": str(today_spend),
+            "avg_daily": str(avg_daily),
         })
 
     @method_decorator(api_login_required)
@@ -1231,6 +1271,13 @@ class SplitGroupDetailAPIView(View):
         # expenses
         expenses_data = []
         for ex in Expense.objects.filter(group=group).select_related("paid_by", "created_by").order_by("-date", "-created_at")[:50]:
+            splits = []
+            for sp in ex.splits.all().select_related("user"):
+                splits.append({
+                    "user": get_user_data(request, sp.user),
+                    "amount": str(sp.amount)
+                })
+
             expenses_data.append({
                 "id": ex.id,
                 "description": ex.description,
@@ -1239,6 +1286,7 @@ class SplitGroupDetailAPIView(View):
                 "created_by_id": ex.created_by.id if ex.created_by else ex.paid_by.id,
                 "split_type": ex.split_type,
                 "date": ex.date.isoformat(),
+                "splits": splits,
             })
 
         # simplified debts
