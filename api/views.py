@@ -1274,8 +1274,10 @@ class SplitGroupDetailAPIView(View):
             splits = []
             for sp in ex.splits.all().select_related("user"):
                 splits.append({
-                    "user": get_user_data(request, sp.user),
-                    "amount": str(sp.amount)
+                    **get_user_data(request, sp.user),
+                    "user_id": sp.user.id,
+                    "amount": str(sp.amount_owed),
+                    "value": str(sp.percentage) if ex.split_type == 'percentage' else str(sp.amount_owed)
                 })
 
             expenses_data.append({
