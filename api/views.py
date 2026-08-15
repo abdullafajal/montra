@@ -1439,6 +1439,15 @@ class SplitExpenseCreateAPIView(View):
                     "already_existed": True
                 }, status=200)
 
+        date_str = data.get("date")
+        expense_date = None
+        if date_str:
+            from dateutil.parser import parse as parse_date
+            try:
+                expense_date = parse_date(date_str)
+            except Exception:
+                pass
+
         try:
             expense = create_expense(
                 group=group,
@@ -1448,7 +1457,8 @@ class SplitExpenseCreateAPIView(View):
                 description=description,
                 split_type=split_type,
                 splits_data=splits_data,
-                local_id=local_id
+                local_id=local_id,
+                date=expense_date
             )
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
@@ -1539,9 +1549,18 @@ class SplitExpenseDetailAPIView(View):
             except User.DoesNotExist:
                 return JsonResponse({"error": "paid_by user not found."}, status=404)
 
+        date_str = data.get("date")
+        expense_date = expense.date
+        if date_str:
+            from dateutil.parser import parse as parse_date
+            try:
+                expense_date = parse_date(date_str)
+            except Exception:
+                pass
+
         from split_expense.services import update_expense
         try:
-            new_exp = update_expense(expense, paid_by_user, amount, description, split_type, splits_data)
+            new_exp = update_expense(expense, paid_by_user, amount, description, split_type, splits_data, date=expense_date)
             return JsonResponse({
                 "expense": {
                     "id": new_exp.id,

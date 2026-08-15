@@ -232,7 +232,7 @@ def _send_external_group_invitation_email(group, invite, inviter, request=None):
     )
 
 @transaction.atomic
-def create_expense(group, paid_by, amount, description, split_type, splits_data=None, local_id=None, created_by=None):
+def create_expense(group, paid_by, amount, description, split_type, splits_data=None, local_id=None, created_by=None, date=None):
     """
     Creates an expense, calculates splits, and updates group member balances.
     
@@ -244,7 +244,7 @@ def create_expense(group, paid_by, amount, description, split_type, splits_data=
     amount = Decimal(str(amount))
     
     # 1. Create the Expense
-    expense = Expense.objects.create(
+    expense = Expense(
         group=group,
         paid_by=paid_by,
         created_by=created_by,
@@ -253,6 +253,9 @@ def create_expense(group, paid_by, amount, description, split_type, splits_data=
         split_type=split_type,
         local_id=local_id
     )
+    if date:
+        expense.date = date
+    expense.save()
     
     members = list(group.members.all())
     num_members = len(members)
@@ -512,7 +515,7 @@ def delete_expense(expense):
     expense.delete()
 
 @transaction.atomic
-def update_expense(expense, paid_by, amount, description, split_type, splits_data=None):
+def update_expense(expense, paid_by, amount, description, split_type, splits_data=None, date=None):
     """
     Updates an expense by reversing the old ledger impact and creating a new one.
     Returns the new expense object.
@@ -543,7 +546,8 @@ def update_expense(expense, paid_by, amount, description, split_type, splits_dat
         amount=amount,
         description=description,
         split_type=split_type,
-        splits_data=splits_data
+        splits_data=splits_data,
+        date=date
     )
 
 @transaction.atomic
