@@ -1,6 +1,7 @@
 """API URL configuration for Espere."""
 from django.urls import path
 from . import views
+from core.views import ContactCaptchaAPIView, ContactSubmitAPIView
 
 app_name = "api"
 
@@ -16,6 +17,10 @@ urlpatterns = [
     path("auth/password/change/", views.ChangePasswordAPIView.as_view(), name="change_password"),
 
     path("devices/register/", views.DeviceTokenAPIView.as_view(), name="device_register"),
+    
+    # Contact & Bug Reports
+    path("contact/captcha/", ContactCaptchaAPIView.as_view(), name="contact_captcha"),
+    path("contact/submit/", ContactSubmitAPIView.as_view(), name="contact_submit"),
 
     # Dashboard & Reports
     path("dashboard/", views.DashboardAPIView.as_view(), name="dashboard"),
