@@ -98,23 +98,21 @@ def process_external_invite_signup(new_user):
         invite.is_joined = True
         invite.save(update_fields=['is_joined'])
         
-        # If the invite was also for a group, we should handle that too if we want, 
-        # but the user only mentioned "Friends List" for signup.
-        # Actually, let's check GroupInvitation too.
-        group_invites = GroupInvitation.objects.filter(email__iexact=new_user.email)
-        for g_invite in group_invites:
-            GroupMember.objects.get_or_create(
-                group=g_invite.group,
-                user=new_user,
-                defaults={'is_accepted': True, 'invited_by': g_invite.invited_by} 
-            )
+    # Check GroupInvitation too.
+    group_invites = GroupInvitation.objects.filter(email__iexact=new_user.email)
+    for g_invite in group_invites:
+        GroupMember.objects.get_or_create(
+            group=g_invite.group,
+            user=new_user,
+            defaults={'is_accepted': True, 'invited_by': g_invite.invited_by} 
+        )
+        
+        # Auto-befriend for group invite as well
+        if g_invite.invited_by:
+            Friendship.objects.get_or_create(user=g_invite.invited_by, friend=new_user)
+            Friendship.objects.get_or_create(user=new_user, friend=g_invite.invited_by)
             
-            # Auto-befriend for group invite as well
-            if g_invite.invited_by:
-                Friendship.objects.get_or_create(user=g_invite.invited_by, friend=new_user)
-                Friendship.objects.get_or_create(user=new_user, friend=g_invite.invited_by)
-                
-            g_invite.delete()
+        g_invite.delete()
 
 def _send_friend_request_notification(friend_request):
     """Notify receiver about friend request."""

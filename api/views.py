@@ -1406,6 +1406,29 @@ class SplitGroupDetailAPIView(View):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
+class SplitLeaveGroupAPIView(View):
+    """POST /api/split/groups/<id>/leave/"""
+
+    @method_decorator(api_login_required)
+    def post(self, request, pk):
+        user = request.api_user
+        try:
+            membership = GroupMember.objects.select_related("group").get(group_id=pk, user=user)
+        except GroupMember.DoesNotExist:
+            return JsonResponse({"error": "Group not found."}, status=404)
+            
+        if membership.net_balance != 0:
+            return JsonResponse({"error": "You cannot leave the group until your balances are settled."}, status=400)
+            
+        group = membership.group
+        membership.delete()
+        
+        # If group has no members left, delete it
+        if group.members.count() == 0:
+            group.delete()
+            
+        return JsonResponse({"message": "You have left the group."})
+@method_decorator(csrf_exempt, name="dispatch")
 class SplitExpenseCreateAPIView(View):
     """POST /api/split/groups/<id>/expenses/ — add an expense."""
 
