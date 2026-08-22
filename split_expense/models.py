@@ -48,6 +48,8 @@ class Group(models.Model):
     color = models.CharField(max_length=20, default="#C8E64A")
     icon = models.CharField(max_length=50, default="groups")
     local_id = models.CharField(max_length=100, null=True, blank=True, db_index=True)
+    invite_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    members_can_invite = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name

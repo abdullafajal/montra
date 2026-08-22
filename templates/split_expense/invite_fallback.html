@@ -10,7 +10,7 @@
         </div>
         <h2 class="h4 mb-3">You've been invited!</h2>
         <p class="text-muted mb-4">
-            <strong>{{ invite.invited_by.username|default:"Someone" }}</strong> has invited you to join the group <strong>"{{ invite.group.name }}"</strong> on Espere.
+            <strong>{% if invite.invited_by.first_name %}{{ invite.invited_by.get_full_name }}{% else %}{{ invite.invited_by.username|default:"Someone" }}{% endif %}</strong> has invited you to join the group <strong>"{{ invite.group.name }}"</strong> on Espere.
         </p>
         
         <p class="mb-4">

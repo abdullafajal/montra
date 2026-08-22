@@ -513,6 +513,9 @@ class DashboardAPIView(View):
         # Insights
         insights = _generate_insights(user, today, income, expenses)
 
+        from split_expense.models import Friendship
+        total_friends = Friendship.objects.filter(user=user).count()
+
         return JsonResponse({
             "greeting": _get_greeting(),
             "user": _user_profile_data(user),
@@ -520,6 +523,7 @@ class DashboardAPIView(View):
             "monthly_income": str(income),
             "monthly_expenses": str(expenses),
             "monthly_savings": str(income - expenses),
+            "total_friends": total_friends,
             "monthly_budget_limit": str(monthly_budget_limit),
             "monthly_budget_spent": str(monthly_budget_spent),
             "currency_symbol": currency_symbol,
@@ -1200,7 +1204,11 @@ class SplitGroupListAPIView(View):
 
         color = data.get("color", "#C8E64A")
         icon = data.get("icon", "groups")
-        group = Group.objects.create(name=name, created_by=user, local_id=local_id, color=color, icon=icon)
+        members_can_invite = data.get("members_can_invite", True)
+        group = Group.objects.create(
+            name=name, created_by=user, local_id=local_id, 
+            color=color, icon=icon, members_can_invite=members_can_invite
+        )
         GroupMember.objects.create(group=group, user=user, is_accepted=True)
 
         # Add other members by ID or username
@@ -1321,6 +1329,8 @@ class SplitGroupDetailAPIView(View):
                 "color": group.color,
                 "icon": group.icon,
                 "created_by_id": group.created_by_id,
+                "invite_token": str(group.invite_token),
+                "members_can_invite": group.members_can_invite,
                 "my_net_balance": str(membership.net_balance),
                 "members": members_data,
                 "recent_expenses": expenses_data,
@@ -1328,6 +1338,27 @@ class SplitGroupDetailAPIView(View):
                 "settlements": settlements_data,
             }
         })
+
+    @method_decorator(api_login_required)
+    def put(self, request, pk):
+        user = request.api_user
+        try:
+            group = Group.objects.get(id=pk, created_by=user)
+        except Group.DoesNotExist:
+            return JsonResponse({"error": "Group not found or you are not the owner."}, status=403)
+            
+        data = parse_json_body(request)
+        if "name" in data:
+            group.name = data["name"].strip()
+        if "color" in data:
+            group.color = data["color"]
+        if "icon" in data:
+            group.icon = data["icon"]
+        if "members_can_invite" in data:
+            group.members_can_invite = data["members_can_invite"]
+            
+        group.save()
+        return JsonResponse({"message": "Group updated successfully."})
 
     @method_decorator(api_login_required)
     def patch(self, request, pk):
@@ -2022,7 +2053,7 @@ class SplitTokenInviteAPIView(View):
     """GET/POST /api/split/invite/<uuid:token>/"""
     
     def get(self, request, token):
-        from split_expense.models import GroupInvitation
+        from split_expense.models import GroupInvitation, Group
         try:
             invite = GroupInvitation.objects.get(token=token)
             return JsonResponse({
@@ -2032,12 +2063,25 @@ class SplitTokenInviteAPIView(View):
                 "email": invite.email
             })
         except GroupInvitation.DoesNotExist:
-            return JsonResponse({"error": "Invalid or expired invitation token.", "valid": False}, status=404)
+            try:
+                group = Group.objects.get(invite_token=token)
+                
+                # Retrieve ref if present in the UI layer, here we just return it's valid
+                return JsonResponse({
+                    "valid": True,
+                    "group_name": group.name,
+                    "invited_by": "A group member",
+                    "email": None
+                })
+            except Group.DoesNotExist:
+                return JsonResponse({"error": "Invalid or expired invitation token.", "valid": False}, status=404)
 
     @method_decorator(api_login_required)
     def post(self, request, token):
-        from split_expense.models import GroupInvitation, GroupMember
+        from split_expense.models import GroupInvitation, GroupMember, Group, Friendship
         user = request.api_user
+        
+        # First check if it's an email invite
         try:
             invite = GroupInvitation.objects.get(token=token)
             
@@ -2055,7 +2099,6 @@ class SplitTokenInviteAPIView(View):
                 membership.invited_by = invite.invited_by
                 membership.save()
                 
-            from split_expense.models import Friendship
             if invite.invited_by:
                 Friendship.objects.get_or_create(user=user, friend=invite.invited_by)
                 Friendship.objects.get_or_create(user=invite.invited_by, friend=user)
@@ -2064,4 +2107,47 @@ class SplitTokenInviteAPIView(View):
             return JsonResponse({"message": "Successfully joined the group!", "group_id": invite.group.id})
             
         except GroupInvitation.DoesNotExist:
+            pass
+
+        # Then check if it's a generic group invite
+        try:
+            group = Group.objects.get(invite_token=token)
+            
+            data = parse_json_body(request)
+            ref_username = data.get("ref", "")
+            
+            invited_by_user = None
+            if ref_username:
+                try:
+                    invited_by_user = User.objects.get(username=ref_username)
+                except User.DoesNotExist:
+                    pass
+            
+            # Enforce members_can_invite
+            if not group.members_can_invite:
+                if invited_by_user and invited_by_user != group.created_by:
+                    return JsonResponse({"error": "Only the group owner can invite new members."}, status=403)
+                # If no ref is passed but the group restricts it, they technically shouldn't be able to join via arbitrary link
+                # but we can allow it if they somehow got the token directly, or we can reject it
+                if not invited_by_user:
+                    return JsonResponse({"error": "Only the group owner can invite new members."}, status=403)
+
+            membership, created = GroupMember.objects.get_or_create(
+                group=group,
+                user=user,
+                defaults={'is_accepted': True, 'invited_by': invited_by_user}
+            )
+            
+            if not created and not membership.is_accepted:
+                membership.is_accepted = True
+                membership.invited_by = invited_by_user
+                membership.save()
+                
+            if invited_by_user:
+                Friendship.objects.get_or_create(user=user, friend=invited_by_user)
+                Friendship.objects.get_or_create(user=invited_by_user, friend=user)
+            
+            return JsonResponse({"message": "Successfully joined the group!", "group_id": group.id})
+            
+        except Group.DoesNotExist:
             return JsonResponse({"error": "Invalid or expired invitation token."}, status=404)

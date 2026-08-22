@@ -16,7 +16,7 @@
         </p>
         
         <p style="color: #1A1A1A; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
-            <strong>{{ inviter.username }}</strong> has invited you to join the group <strong style="color: #C8E64A; background-color: #1A1A1A; padding: 2px 8px; border-radius: 6px;">{{ group.name }}</strong> on Espere to help split shared expenses together!
+            <strong>{% if inviter.first_name %}{{ inviter.get_full_name }}{% else %}{{ inviter.username }}{% endif %}</strong> has invited you to join the group <strong style="color: #C8E64A; background-color: #1A1A1A; padding: 2px 8px; border-radius: 6px;">{{ group.name }}</strong> on Espere to help split shared expenses together!
             <br><br>
             By joining, you'll be able to see all shared bills, add your own expenses, and easily settle up your balances.
         </p>
