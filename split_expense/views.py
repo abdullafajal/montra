@@ -45,7 +45,8 @@ class SendFriendRequestView(LoginRequiredMixin, View):
                 messages.success(request, f"Friend request sent to {result.receiver.username}.")
             else:
                 # External invite
-                invite_url = request.build_absolute_uri(reverse('accounts:register'))
+                domain = getattr(settings, 'SITE_DOMAIN', 'espere.in')
+                invite_url = f"https://{domain}/accounts/register/"
                 subject = f"{request.user.username} invited you to join Espere"
                 html_message = render_to_string('split_expense/email/friend_invitation.html', {
                     'inviter': request.user,
@@ -327,7 +328,8 @@ class GroupMemberAddView(LoginRequiredMixin, View):
                     # Send invitation email
                     try:
                         subject = f"{request.user.username} invited you to '{group.name}'"
-                        invite_url = request.build_absolute_uri(reverse('split_expense:invitations'))
+                        domain = getattr(settings, 'SITE_DOMAIN', 'espere.in')
+                        invite_url = f"https://{domain}/split/invitations/"
                         html_message = render_to_string('split_expense/email/group_invitation.html', {
                             'inviter': request.user,
                             'group': group,

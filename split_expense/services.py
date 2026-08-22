@@ -52,12 +52,8 @@ def _send_external_invitation_email(invitation, request=None):
     email = invitation.email
     
     subject = f"Invitation to join Espere from {sender.username}"
-    if request:
-        from django.urls import reverse
-        invite_url = request.build_absolute_uri(reverse('accounts:register')) + f"?email={email}"
-    else:
-        domain = getattr(conf, 'SITE_DOMAIN', 'espere.in')
-        invite_url = f"https://{domain}/accounts/register/?email={email}"
+    domain = getattr(conf, 'SITE_DOMAIN', 'espere.in')
+    invite_url = f"https://{domain}/accounts/register/?email={email}"
     
     html_message = render_to_string('split_expense/email/friend_invitation.html', {
         'inviter': sender,
@@ -216,12 +212,9 @@ def _send_external_group_invitation_email(group, invite, inviter, request=None):
     from django.utils.html import strip_tags
     from django.conf import settings
     
-    if request:
-        domain = request.build_absolute_uri('/')[:-1]
-    else:
-        domain = f"https://{getattr(settings, 'SITE_DOMAIN', 'espere.in')}"
+    domain = getattr(settings, 'SITE_DOMAIN', 'espere.in')
         
-    link = f"{domain}/invite/{invite.token}/"
+    link = f"https://{domain}/invite/{invite.token}/"
     
     subject = f"Invitation to join '{group.name}' on Espere"
     html_message = render_to_string('split_expense/email/group_invitation.html', {

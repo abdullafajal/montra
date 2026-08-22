@@ -52,8 +52,8 @@ def _send_verification_email(request, user, token):
 
 
 def _send_password_reset_email(request, user, token):
-    """Send a password reset email with a link to set a new password."""
-    reset_url = request.build_absolute_uri(f"/accounts/reset-password/{token.token}/")
+    domain = getattr(settings, 'SITE_DOMAIN', 'espere.in')
+    reset_url = f"https://{domain}/accounts/reset-password/{token.token}/"
     subject = "Reset your Espere password"
     html_message = render_to_string("accounts/password_reset_email.html", {
         "user": user,
