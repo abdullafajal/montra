@@ -3,6 +3,11 @@
 import uuid
 from django.db import migrations, models
 
+def gen_uuid(apps, schema_editor):
+    Group = apps.get_model('split_expense', 'Group')
+    for row in Group.objects.all():
+        row.invite_token = uuid.uuid4()
+        row.save(update_fields=['invite_token'])
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -10,6 +15,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(gen_uuid, reverse_code=migrations.RunPython.noop),
         migrations.AlterField(
             model_name="group",
             name="invite_token",
