@@ -27,8 +27,17 @@ def assetlinks_view(request):
     }]
     return JsonResponse(data, safe=False)
 
+def add_cors(response):
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
+    return response
+
 @method_decorator(csrf_exempt, name='dispatch')
 class ContactCaptchaAPIView(View):
+    def options(self, request, *args, **kwargs):
+        return add_cors(JsonResponse({}))
+
     def get(self, request):
         num1 = random.randint(1, 10)
         num2 = random.randint(1, 10)
@@ -36,10 +45,13 @@ class ContactCaptchaAPIView(View):
         question = f"{num1} + {num2} = ?"
         signer = Signer()
         token = signer.sign(answer)
-        return JsonResponse({"question": question, "token": token})
+        return add_cors(JsonResponse({"question": question, "token": token}))
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ContactSubmitAPIView(View):
+    def options(self, request, *args, **kwargs):
+        return add_cors(JsonResponse({}))
+
     def post(self, request):
         try:
             data = json.loads(request.body)
@@ -51,16 +63,16 @@ class ContactSubmitAPIView(View):
             captcha_token = data.get('captcha_token', '').strip()
 
             if not all([name, email, message, captcha_answer, captcha_token]):
-                return JsonResponse({"error": "All fields are required."}, status=400)
+                return add_cors(JsonResponse({"error": "All fields are required."}, status=400))
 
             # Verify captcha
             signer = Signer()
             try:
                 original = signer.unsign(captcha_token)
                 if original != captcha_answer:
-                    return JsonResponse({"error": "Incorrect captcha answer."}, status=400)
+                    return add_cors(JsonResponse({"error": "Incorrect captcha answer."}, status=400))
             except BadSignature:
-                return JsonResponse({"error": "Invalid captcha token."}, status=400)
+                return add_cors(JsonResponse({"error": "Invalid captcha token."}, status=400))
 
             # Save message
             contact_msg = ContactMessage.objects.create(
@@ -96,8 +108,8 @@ class ContactSubmitAPIView(View):
                         fail_silently=True,
                     )
 
-            return JsonResponse({"status": "success", "message": "Your message has been sent successfully!"})
+            return add_cors(JsonResponse({"status": "success", "message": "Your message has been sent successfully!"}))
         except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON."}, status=400)
+            return add_cors(JsonResponse({"error": "Invalid JSON."}, status=400))
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return add_cors(JsonResponse({"error": str(e)}, status=500))
