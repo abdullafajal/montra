@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Invitation - Espere{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center" style="max-width: 600px;">
+    <div class="card p-4 shadow-sm" style="border-radius: 1rem; border: none;">
+        <div class="mb-4">
+            <img src="/static/images/logo.png" alt="Espere Logo" style="width: 80px; height: 80px;" class="rounded-circle">
+        </div>
+        <h2 class="h4 mb-3">You've been invited!</h2>
+        <p class="text-muted mb-4">
+            <strong>{{ invite.invited_by.username|default:"Someone" }}</strong> has invited you to join the group <strong>"{{ invite.group.name }}"</strong> on Espere.
+        </p>
+        
+        <p class="mb-4">
+            To view and manage expenses, please open this link in the Espere app.
+        </p>
+
+        <div class="d-flex flex-column gap-3">
+            <a href="{{ app_url }}" class="btn btn-primary btn-lg rounded-pill fw-bold">
+                Open in App
+            </a>
+            <a href="https://espere.in/espere.apk" class="btn btn-outline-dark btn-lg rounded-pill fw-bold" download>
+                Download APK
+            </a>
+        </div>
+        
+        <p class="text-muted small mt-4">
+            If you already have the app installed, clicking "Open in App" will redirect you. Otherwise, download Espere to get started.
+        </p>
+    </div>
+</div>
+
+<script>
+    // Optional: Try to automatically open the app when the page loads
+    // This often works for intent URLs on Android
+    window.onload = function() {
+        setTimeout(function() {
+            window.location.href = "{{ app_url|safe }}";
+        }, 500);
+    };
+</script>
+{% endblock %}

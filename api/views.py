@@ -2004,9 +2004,64 @@ class SplitInvitationActionAPIView(View):
             if action == 'accept':
                 membership.is_accepted = True
                 membership.save()
+                
+                if membership.invited_by:
+                    from split_expense.models import Friendship
+                    Friendship.objects.get_or_create(user=user, friend=membership.invited_by)
+                    Friendship.objects.get_or_create(user=membership.invited_by, friend=user)
+                    
                 return JsonResponse({"message": "Invitation accepted."})
             else:
                 membership.delete()
                 return JsonResponse({"message": "Invitation rejected."})
         except GroupMember.DoesNotExist:
             return JsonResponse({"error": "Invitation not found."}, status=404)
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SplitTokenInviteAPIView(View):
+    """GET/POST /api/split/invite/<uuid:token>/"""
+    
+    def get(self, request, token):
+        from split_expense.models import GroupInvitation
+        try:
+            invite = GroupInvitation.objects.get(token=token)
+            return JsonResponse({
+                "valid": True,
+                "group_name": invite.group.name,
+                "invited_by": invite.invited_by.username if invite.invited_by else "Someone",
+                "email": invite.email
+            })
+        except GroupInvitation.DoesNotExist:
+            return JsonResponse({"error": "Invalid or expired invitation token.", "valid": False}, status=404)
+
+    @method_decorator(api_login_required)
+    def post(self, request, token):
+        from split_expense.models import GroupInvitation, GroupMember
+        user = request.api_user
+        try:
+            invite = GroupInvitation.objects.get(token=token)
+            
+            if user.email.lower() != invite.email.lower():
+                return JsonResponse({"error": f"This invite is for {invite.email}. You are logged in as {user.email}."}, status=403)
+                
+            membership, created = GroupMember.objects.get_or_create(
+                group=invite.group,
+                user=user,
+                defaults={'is_accepted': True, 'invited_by': invite.invited_by}
+            )
+            
+            if not created and not membership.is_accepted:
+                membership.is_accepted = True
+                membership.invited_by = invite.invited_by
+                membership.save()
+                
+            from split_expense.models import Friendship
+            if invite.invited_by:
+                Friendship.objects.get_or_create(user=user, friend=invite.invited_by)
+                Friendship.objects.get_or_create(user=invite.invited_by, friend=user)
+            
+            invite.delete()
+            return JsonResponse({"message": "Successfully joined the group!", "group_id": invite.group.id})
+            
+        except GroupInvitation.DoesNotExist:
+            return JsonResponse({"error": "Invalid or expired invitation token."}, status=404)

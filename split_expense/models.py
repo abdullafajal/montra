@@ -44,7 +44,7 @@ class Group(models.Model):
     name = models.CharField(max_length=100)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_groups")
     created_at = models.DateTimeField(auto_now_add=True)
-    members = models.ManyToManyField(User, through='GroupMember', related_name='expense_groups')
+    members = models.ManyToManyField(User, through='GroupMember', related_name='expense_groups', through_fields=('group', 'user'))
     color = models.CharField(max_length=20, default="#C8E64A")
     icon = models.CharField(max_length=50, default="groups")
     local_id = models.CharField(max_length=100, null=True, blank=True, db_index=True)
@@ -78,6 +78,9 @@ class GroupMember(models.Model):
     # When the user was last sent an email reminder for owing money in this group
     last_reminded_at = models.DateTimeField(null=True, blank=True)
     reminders_sent_today = models.PositiveIntegerField(default=0)
+    
+    # Track who invited this user so we can auto-befriend them upon acceptance
+    invited_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="invited_members")
 
     class Meta:
         unique_together = ('group', 'user')

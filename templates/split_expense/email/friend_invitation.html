@@ -1,32 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>You've been invited to Espere</title>
+    <meta charset="utf-8">
 </head>
-<body style="font-family: sans-serif; background-color: #f5f5f5; padding: 40px;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-        <div style="background-color: #1A1A1A; padding: 30px; text-align: center;">
-            <h1 style="color: #C8E64A; margin: 0;">Espere</h1>
+<body style="font-family: 'Inter', Arial, sans-serif; background-color: #F5F5F5; margin: 0; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.04); border: 1px solid #EEEEEE;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="https://espere.in/images/favicon.png" alt="Espere" style="width: 64px; height: 64px; border-radius: 16px; margin: 0 auto; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
         </div>
-        <div style="padding: 40px;">
-            <h2 style="color: #1A1A1A; margin-top: 0;">Hi there!</h2>
-            <p style="color: #666666; font-size: 16px; line-height: 1.6;">
-                <strong>{{ inviter.username }}</strong> has invited you to join them on <strong>Espere</strong>, a modern expense and split tracker.
-            </p>
-            <p style="color: #666666; font-size: 16px; line-height: 1.6;">
-                By joining Espere, you can easily split bills with friends, track your monthly budgets, and keep your finances in check.
-            </p>
-            <div style="text-align: center; margin: 40px 0;">
-                <a href="{{ invite_url }}" style="background-color: #C8E64A; color: #1A1A1A; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Create Account</a>
-            </div>
-            <p style="color: #999999; font-size: 14px;">
-                If you weren't expecting this, you can safely ignore this email.
-            </p>
+        
+        <h1 style="color: #1A1A1A; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 20px;">You've been invited!</h1>
+        
+        <p style="color: #1A1A1A; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            Hi there,
+        </p>
+        
+        <p style="color: #1A1A1A; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+            <strong>{{ inviter.username }}</strong> has invited you to join them on Espere, a modern expense and split tracker!
+            <br><br>
+            By joining Espere, you can easily split bills with friends, track your monthly budgets, and keep your finances in check.
+        </p>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <a href="{{ invite_url }}" style="background-color: #1A1A1A; color: #C8E64A; padding: 14px 28px; text-decoration: none; border-radius: 16px; font-weight: bold; font-size: 16px; display: inline-block;">Create Account</a>
         </div>
-        <div style="background-color: #FAFAFA; padding: 20px; text-align: center; border-top: 1px solid #EEEEEE;">
-            <p style="color: #999999; font-size: 12px; margin: 0;">&copy; 2026 Espere. All rights reserved.</p>
-        </div>
+        
+        <hr style="border: 0; border-top: 1px solid #EEEEEE; margin: 30px 0;">
+        
+        <p style="color: #9E9E9E; font-size: 12px; text-align: center;">
+            If you weren't expecting this, you can safely ignore this email.
+        </p>
     </div>
 </body>
 </html>

@@ -53,4 +53,5 @@ urlpatterns = [
     path("split/friends/action/", views.SplitFriendActionAPIView.as_view(), name="split_friend_action"),
     path("split/invitations/", views.SplitInvitationListAPIView.as_view(), name="split_invitation_list"),
     path("split/invitations/<int:pk>/action/", views.SplitInvitationActionAPIView.as_view(), name="split_invitation_action"),
+    path("split/invite/<uuid:token>/", views.SplitTokenInviteAPIView.as_view(), name="split_token_invite"),
 ]

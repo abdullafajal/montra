@@ -110,10 +110,15 @@ def process_external_invite_signup(new_user):
             GroupMember.objects.get_or_create(
                 group=g_invite.group,
                 user=new_user,
-                defaults={'is_accepted': False} # They still need to accept the group invite
+                defaults={'is_accepted': True, 'invited_by': g_invite.invited_by} 
             )
-            # We don't delete GroupInvitation yet because they might use the token link, 
-            # but usually signup covers it.
+            
+            # Auto-befriend for group invite as well
+            if g_invite.invited_by:
+                Friendship.objects.get_or_create(user=g_invite.invited_by, friend=new_user)
+                Friendship.objects.get_or_create(user=new_user, friend=g_invite.invited_by)
+                
+            g_invite.delete()
 
 def _send_friend_request_notification(friend_request):
     """Notify receiver about friend request."""
@@ -156,7 +161,7 @@ def invite_user_to_group(group, identifier, inviter, request=None):
             return False, f"{user_to_add.username} is already in the group."
             
         # Create membership
-        GroupMember.objects.create(group=group, user=user_to_add, is_accepted=False)
+        GroupMember.objects.create(group=group, user=user_to_add, is_accepted=False, invited_by=inviter)
         
         # Send notifications (Push)
         _send_group_invitation_notification(group, user_to_add, request=request)
@@ -216,7 +221,7 @@ def _send_external_group_invitation_email(group, invite, inviter, request=None):
     else:
         domain = f"https://{getattr(settings, 'SITE_DOMAIN', 'espere.in')}"
         
-    link = f"{domain}/split/invite/{invite.token}/"
+    link = f"{domain}/invite/{invite.token}/"
     
     subject = f"Invitation to join '{group.name}' on Espere"
     html_message = render_to_string('split_expense/email/group_invitation.html', {

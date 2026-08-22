@@ -16,7 +16,12 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = os.environ.get(
+    "ALLOWED_HOSTS", 
+    "espere.in,www.espere.in,.pythonanywhere.com,localhost,127.0.0.1"
+).split(",")
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ---------------------------------------------------------------------------
 # Auth Backends
@@ -213,9 +218,10 @@ X_FRAME_OPTIONS = 'ALLOWALL'
 
 CSRF_TRUSTED_ORIGINS = [
     "https://espere.in",
+    "https://www.espere.in",
 ]
 
-SITE_DOMAIN = os.environ.get("SITE_DOMAIN", "https://montra.pythonanywhere.com/")
+SITE_DOMAIN = os.environ.get("SITE_DOMAIN", "espere.in")
 CSRF_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_SECURE = True
 

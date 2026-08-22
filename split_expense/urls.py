@@ -28,7 +28,6 @@ urlpatterns = [
     path('<int:group_id>/leave/', views.GroupLeaveView.as_view(), name='group_leave'),
     
     path('invitations/', views.InvitationListView.as_view(), name='invitations'),
-    path('invite/<uuid:token>/', views.InvitationAcceptSpecialView.as_view(), name='invitation_special_link'),
     path('<int:group_id>/invite/<str:action>/', views.InvitationActionView.as_view(), name='invitation_action'),
     path('api/users/search/', views.UserSearchAPIView.as_view(), name='api_user_search'),
 ]

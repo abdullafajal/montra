@@ -378,29 +378,15 @@ class InvitationAcceptSpecialView(View):
     def get(self, request, token):
         invite = get_object_or_404(GroupInvitation, token=token)
         
-        if request.user.is_authenticated:
-            # Ensure email matches
-            if request.user.email.lower() == invite.email.lower():
-                # Add them to the group
-                GroupMember.objects.get_or_create(
-                    group=invite.group,
-                    user=request.user,
-                    defaults={'is_accepted': True}
-                )
-                
-                messages.success(request, f"You successfully joined {invite.group.name}!")
-                invite.delete()
-                return redirect('split_expense:group_detail', pk=invite.group.id)
-            else:
-                messages.error(request, f"This invitation was sent to {invite.email}, but you are logged in as {request.user.email}. Please log in with the correct account.")
-                return redirect('transactions:dashboard')
-        else:
-            # Store in session and redirect to register
-            request.session['invite_token'] = str(token)
-            request.session['invite_email'] = invite.email
-            messages.info(request, f"You've been invited to join {invite.group.name}! Please create an account to view and share expenses.")
-            
-            return redirect('accounts:register')
+        # We always render the fallback page when accessed via browser.
+        # This page will attempt to redirect to the app using an intent, 
+        # or allow the user to install it.
+        context = {
+            'invite': invite,
+            'token': token,
+            'app_url': f"intent://espere.in/invite/{token}#Intent;scheme=https;package=com.example.espere_app;end"
+        }
+        return render(request, 'split_expense/invite_fallback.html', context)
 
 class SendReminderView(LoginRequiredMixin, View):
     def post(self, request, group_id):
