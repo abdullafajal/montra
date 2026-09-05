@@ -2232,3 +2232,98 @@ class SplitTokenInviteAPIView(View):
             
         except Group.DoesNotExist:
             return JsonResponse({"error": "Invalid or expired invitation token."}, status=404)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ForgotPasswordAPIView(View):
+    """POST /api/auth/forgot-password/ — sends OTP for password reset."""
+
+    def post(self, request):
+        data = parse_json_body(request)
+        email = data.get("email", "").strip()
+
+        if not email:
+            return JsonResponse({"error": "Email is required."}, status=400)
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            return JsonResponse({"message": "If the email is registered, a password reset OTP has been sent."}, status=200)
+
+        from accounts.models import PasswordResetToken
+        from django.core.mail import send_mail
+        from django.template.loader import render_to_string
+        from django.conf import settings
+
+        # Delete old tokens
+        PasswordResetToken.objects.filter(user=user).delete()
+
+        # Create and send new token
+        token_obj = PasswordResetToken.objects.create(user=user)
+        
+        try:
+            subject = "Password Reset Request - Espere"
+            html_message = render_to_string("accounts/password_reset_email.html", {
+                "user": user,
+                "otp": token_obj.token,
+            })
+            send_mail(
+                subject=subject,
+                message=f"Your password reset OTP is {token_obj.token}",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+        except Exception as e:
+            print(f"Error sending password reset email: {e}")
+
+        return JsonResponse({"message": "If the email is registered, a password reset OTP has been sent."}, status=200)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class VerifyPasswordResetOTPAPIView(View):
+    """POST /api/auth/verify-password-reset-otp/ — verifies the OTP for password reset."""
+
+    def post(self, request):
+        data = parse_json_body(request)
+        email = data.get("email", "").strip()
+        otp = data.get("otp", "").strip()
+
+        if not email or not otp:
+            return JsonResponse({"error": "Email and OTP are required."}, status=400)
+
+        from accounts.models import PasswordResetToken
+        try:
+            token_obj = PasswordResetToken.objects.get(user__email__iexact=email, token=otp)
+            return JsonResponse({"message": "OTP verified successfully. You can now reset your password."}, status=200)
+        except PasswordResetToken.DoesNotExist:
+            return JsonResponse({"error": "Invalid or expired OTP."}, status=400)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ResetPasswordAPIView(View):
+    """POST /api/auth/reset-password/ — sets a new password using a verified OTP."""
+
+    def post(self, request):
+        data = parse_json_body(request)
+        email = data.get("email", "").strip()
+        otp = data.get("otp", "").strip()
+        new_password = data.get("new_password", "")
+
+        if not email or not otp or not new_password:
+            return JsonResponse({"error": "Email, OTP, and new password are required."}, status=400)
+
+        if len(new_password) < 6:
+            return JsonResponse({"error": "Password must be at least 6 characters long."}, status=400)
+
+        from accounts.models import PasswordResetToken
+        try:
+            token_obj = PasswordResetToken.objects.get(user__email__iexact=email, token=otp)
+            user = token_obj.user
+            user.set_password(new_password)
+            user.save()
+            token_obj.delete()
+            return JsonResponse({"message": "Password reset successfully. You can now log in."}, status=200)
+        except PasswordResetToken.DoesNotExist:
+            return JsonResponse({"error": "Invalid or expired OTP."}, status=400)
