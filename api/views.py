@@ -221,8 +221,9 @@ class GoogleLoginAPIView(View):
                 return JsonResponse({"error": "Email not provided by Google."}, status=400)
                 
             # Find or create user
-            user, created = User.objects.get_or_create(username=email, defaults={
-                'email': email,
+            # We search by email to ensure we catch users who signed up manually with a different username
+            user, created = User.objects.get_or_create(email=email, defaults={
+                'username': email,
                 'first_name': first_name,
                 'last_name': last_name
             })
