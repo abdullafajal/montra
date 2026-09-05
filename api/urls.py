@@ -1,6 +1,7 @@
 """API URL configuration for Espere."""
 from django.urls import path
 from . import views
+from .views import GoogleLoginAPIView
 from core.views import ContactCaptchaAPIView, ContactSubmitAPIView
 
 app_name = "api"
@@ -8,6 +9,7 @@ app_name = "api"
 urlpatterns = [
     # Auth
     path("auth/login/", views.LoginAPIView.as_view(), name="login"),
+    path("auth/google/", GoogleLoginAPIView.as_view(), name="google_login"),
     path("auth/logout/", views.LogoutAPIView.as_view(), name="logout"),
     path("auth/register/", views.RegisterAPIView.as_view(), name="register"),
     path("auth/verify-otp/", views.VerifyOTPAPIView.as_view(), name="verify_otp"),

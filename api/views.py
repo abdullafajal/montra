@@ -18,6 +18,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.core.exceptions import ValidationError
 from django.conf import settings
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 
 from accounts.models import UserProfile
 from transactions.models import Transaction, Category, Budget, SavingsGoal
@@ -181,6 +183,64 @@ class LoginAPIView(View):
             "token": token.key,
             "user": _user_profile_data(user),
         })
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class GoogleLoginAPIView(View):
+    """
+    POST /api/auth/google/
+    Expects JSON: {"id_token": "..."}
+    """
+    def post(self, request):
+        data = parse_json_body(request)
+        token = data.get("id_token")
+        
+        if not token:
+            return JsonResponse({"error": "id_token is required."}, status=400)
+            
+        try:
+            # Note: client_id is not strictly verified here if we allow multiple clients (Android, iOS)
+            # but we can pass the Web Client ID if we have it.
+            # For flexibility across multiple client IDs, we verify without a specific audience,
+            # or verify the issuer first.
+            idinfo = google_id_token.verify_oauth2_token(
+                token, google_requests.Request()
+            )
+
+            # Check issuer
+            if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+                raise ValueError('Wrong issuer.')
+
+            # We can optionally verify idinfo['aud'] matches our client IDs here
+            
+            email = idinfo.get("email")
+            first_name = idinfo.get("given_name", "")
+            last_name = idinfo.get("family_name", "")
+            
+            if not email:
+                return JsonResponse({"error": "Email not provided by Google."}, status=400)
+                
+            # Find or create user
+            user, created = User.objects.get_or_create(username=email, defaults={
+                'email': email,
+                'first_name': first_name,
+                'last_name': last_name
+            })
+            
+            # Generate APIToken
+            api_token = APIToken.generate_token(user)
+            
+            return JsonResponse({
+                "token": api_token.key,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "is_new_user": created
+            })
+            
+        except ValueError as e:
+            # Invalid token
+            return JsonResponse({"error": f"Invalid Google token: {str(e)}"}, status=400)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -492,6 +552,10 @@ class DashboardAPIView(View):
             ).aggregate(t=Sum("amount"))["t"] or 0
             line_labels.append(d.strftime("%d"))
             line_values.append(float(daily))
+
+        # Auto-create / carry forward budgets for the current month if none exist
+        from transactions.services import ensure_current_month_budgets
+        ensure_current_month_budgets(user, today)
 
         # Budget warnings and overall monthly budget
         current_budgets = Budget.objects.filter(user=user, month__year=today.year, month__month=today.month).select_related("category")
@@ -923,24 +987,17 @@ class BudgetListAPIView(View):
                 y, m = map(int, month_param.split("-"))
                 month_date = date(y, m, 1)
                 
-                # Auto carry-forward logic
-                exists = budgets.filter(month__year=y, month__month=m).exists()
-                if not exists:
-                    last_budget = Budget.objects.filter(user=user, month__lt=month_date).order_by("-month").first()
-                    if last_budget:
-                        last_month = last_budget.month
-                        past_budgets = Budget.objects.filter(user=user, month__year=last_month.year, month__month=last_month.month)
-                        for pb in past_budgets:
-                            Budget.objects.create(
-                                user=user,
-                                category=pb.category,
-                                amount=pb.amount,
-                                month=month_date
-                            )
+                # Auto carry-forward logic using service
+                from transactions.services import ensure_current_month_budgets
+                ensure_current_month_budgets(user, month_date)
                 
                 budgets = budgets.filter(month__year=y, month__month=m)
             except ValueError:
                 pass
+        else:
+            # If no month parameter is provided, make sure current month budgets exist
+            from transactions.services import ensure_current_month_budgets
+            ensure_current_month_budgets(user)
 
         data = []
         for b in budgets:
