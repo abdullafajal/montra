@@ -2,7 +2,7 @@
 from django.urls import path
 from . import views
 from .views import GoogleLoginAPIView
-from core.views import ContactCaptchaAPIView, ContactSubmitAPIView
+from core.views import ContactCaptchaAPIView, ContactSubmitAPIView, AppVersionAPIView
 
 app_name = "api"
 
@@ -26,6 +26,9 @@ urlpatterns = [
     # Contact & Bug Reports
     path("contact/captcha/", ContactCaptchaAPIView.as_view(), name="contact_captcha"),
     path("contact/submit/", ContactSubmitAPIView.as_view(), name="contact_submit"),
+
+    # App Version
+    path("version/latest/", AppVersionAPIView.as_view(), name="app_version_latest"),
 
     # Dashboard & Reports
     path("dashboard/", views.DashboardAPIView.as_view(), name="dashboard"),

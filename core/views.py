@@ -8,7 +8,7 @@ from django.core.signing import Signer, BadSignature
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import User
-from .models import ContactMessage
+from .models import ContactMessage, AppVersion
 from accounts.models import DeviceToken
 from config.firebase import send_push_notification
 
@@ -113,3 +113,27 @@ class ContactSubmitAPIView(View):
             return add_cors(JsonResponse({"error": "Invalid JSON."}, status=400))
         except Exception as e:
             return add_cors(JsonResponse({"error": str(e)}, status=500))
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AppVersionAPIView(View):
+    def options(self, request, *args, **kwargs):
+        return add_cors(JsonResponse({}))
+
+    def get(self, request):
+        version = AppVersion.objects.filter(is_active=True).order_by('-version_code').first()
+        if not version:
+            return add_cors(JsonResponse({
+                "version_code": 0,
+                "version_name": "1.0.0",
+                "is_required": False,
+                "release_notes": "Bug fixes and performance improvements.",
+                "update_url": "https://espere.in/espere.apk"
+            }))
+        
+        return add_cors(JsonResponse({
+            "version_code": version.version_code,
+            "version_name": version.version_name,
+            "is_required": version.is_required,
+            "release_notes": version.release_notes,
+            "update_url": version.update_url
+        }))
