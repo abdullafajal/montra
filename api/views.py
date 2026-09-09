@@ -1824,6 +1824,42 @@ class SplitAddMemberAPIView(View):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
+class SplitRemoveMemberAPIView(View):
+    """POST /api/split/groups/<group_id>/members/<user_id>/remove/"""
+
+    @method_decorator(api_login_required)
+    def post(self, request, group_id, user_id):
+        user = request.api_user
+        try:
+            membership = GroupMember.objects.select_related("group").get(group_id=group_id, user=user)
+        except GroupMember.DoesNotExist:
+            return JsonResponse({"error": "Group not found."}, status=404)
+
+        group = membership.group
+        
+        if user != group.created_by and user.id != user_id:
+            return JsonResponse({"error": "Only the group creator can remove other members."}, status=403)
+            
+        if user_id == group.created_by.id:
+            return JsonResponse({"error": "The group creator cannot be removed."}, status=400)
+
+        from django.contrib.auth.models import User
+        try:
+            user_to_remove = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return JsonResponse({"error": "User not found."}, status=404)
+
+        from split_expense.services import remove_member
+        from django.core.exceptions import ValidationError
+
+        try:
+            remove_member(group, user_to_remove)
+            return JsonResponse({"status": "ok", "message": "Member removed."})
+        except ValidationError as e:
+            return JsonResponse({"error": str(e.message)}, status=400)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
 class SplitUserSearchAPIView(View):
     """GET /api/split/users/search/?q=... — search users by username/email."""
 
