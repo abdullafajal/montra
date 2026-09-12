@@ -133,19 +133,19 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         if prev_expenses > 0 and current_expenses > 0:
             change = ((current_expenses - prev_expenses) / prev_expenses) * 100
             if change > 0:
-                insights.append(f"📈 You spent {abs(change):.0f}% more than last month.")
+                insights.append(f"You spent {abs(change):.0f}% more than last month.")
             elif change < -5:
-                insights.append(f"📉 Great! You spent {abs(change):.0f}% less than last month.")
+                insights.append(f"Great! You spent {abs(change):.0f}% less than last month.")
 
         if current_income > current_expenses:
             savings_rate = ((current_income - current_expenses) / current_income) * 100
-            insights.append(f"💰 Your savings rate this month is {savings_rate:.0f}%.")
+            insights.append(f"Your savings rate this month is {savings_rate:.0f}%.")
 
         if current_expenses > current_income and current_income > 0:
-            insights.append("⚠️ You're spending more than you earn this month!")
+            insights.append("You're spending more than you earn this month!")
 
         if not insights:
-            insights.append("💡 Start tracking your expenses to get personalized insights!")
+            insights.append("Start tracking your expenses to get personalized insights!")
 
         return insights
 
