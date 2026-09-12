@@ -487,12 +487,13 @@ def create_settlement(group, paid_by, paid_to, amount, local_id=None):
     return settlement
 
 @transaction.atomic
-def delete_expense(expense):
+def delete_expense(expense, deleted_by=None):
     """
     Reverses the ledger impact of an expense and deletes it.
     """
     group = expense.group
     amount = expense.amount
+    expense_desc = expense.description
     
     # 1. Reverse the payer's total_paid and net_balance
     payer_ledger = GroupMember.objects.get(group=group, user=expense.paid_by)
@@ -508,7 +509,40 @@ def delete_expense(expense):
         member_ledger.save(update_fields=['total_owed', 'net_balance'])
     
     # 3. Delete the expense (cascades to ExpenseSplit)
+    expense_id = expense.id
     expense.delete()
+    
+    # 4. Notify other members
+    if deleted_by:
+        from accounts.models import DeviceToken, Notification
+        from config.firebase import send_push_notification
+        
+        deleter_name = deleted_by.get_full_name() or deleted_by.username
+        subject = f"Expense Deleted in {group.name}"
+        body = f"{deleter_name} deleted the expense '{expense_desc}'."
+        
+        members = User.objects.filter(expense_groups=group).exclude(id=deleted_by.id)
+        for member in members:
+            # Create in-app notification
+            Notification.objects.create(
+                user=member,
+                title=subject,
+                message=body,
+                data={
+                    "action": "open_split_group",
+                    "group_id": str(group.id)
+                }
+            )
+
+            # Push notification
+            tokens = DeviceToken.objects.filter(user=member)
+            for dt in tokens:
+                send_push_notification(
+                    token=dt.token,
+                    title=subject,
+                    body=body,
+                    data={"action": "open_split_group", "group_id": str(group.id)}
+                )
 
 @transaction.atomic
 def update_expense(expense, paid_by, amount, description, split_type, splits_data=None, date=None):

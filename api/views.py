@@ -1336,9 +1336,9 @@ class SplitGroupDetailAPIView(View):
             
         # expenses
         expenses_data = []
-        for ex in Expense.objects.filter(group=group).select_related("paid_by", "created_by").order_by("-date", "-created_at")[:50]:
+        for ex in Expense.objects.filter(group=group).select_related("paid_by", "created_by").prefetch_related("splits__user").order_by("-date", "-created_at")[:50]:
             splits = []
-            for sp in ex.splits.all().select_related("user"):
+            for sp in ex.splits.all():
                 splits.append({
                     **get_user_data(request, sp.user),
                     "user_id": sp.user.id,
@@ -1705,7 +1705,7 @@ class SplitExpenseDetailAPIView(View):
 
         from split_expense.services import delete_expense
         try:
-            delete_expense(expense)
+            delete_expense(expense, deleted_by=user)
             return JsonResponse({"message": "Expense deleted."})
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
