@@ -23,5 +23,5 @@ class AccountsConfig(AppConfig):
             is_server = True
             
         if is_server:
-            from .scheduler import start_auto_reminders
-            start_auto_reminders()
+            from .scheduler import start_background_tasks
+            start_background_tasks()
