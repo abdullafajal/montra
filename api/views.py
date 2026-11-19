@@ -2033,26 +2033,19 @@ class SplitReminderAPIView(View):
         email_body_text = f"Hi {user_to_remind.username},\n\nJust a quick reminder regarding your balance of {amount} in '{group.name}'.\n\nPlease settle up when you can!"
         push_body_text = f"Just a reminder regarding your balance of {amount}. Please settle up!"
         
-        # Try pushing notification first
-        pushed = False
-        from accounts.models import DeviceToken
-        from config.firebase import send_push_notification
-        
-        tokens = DeviceToken.objects.filter(user=user_to_remind)
-        if tokens.exists():
-            for dt in tokens:
-                success = send_push_notification(
-                    token=dt.token, 
-                    title=subject, 
-                    body=push_body_text,
-                    data={
-                        "action": "open_split_group",
-                        "group_id": str(group.id),
-                        "group_name": group.name,
-                    }
-                )
-                if success:
-                    pushed = True
+        # Saved to their Notifications list and pushed; email only if no push went out.
+        from accounts.notify import notify
+        pushed = notify(
+            user_to_remind,
+            subject,
+            push_body_text,
+            data={
+                "action": "open_split_group",
+                "group_id": str(group.id),
+                "group_name": group.name,
+                "kind": "split_reminder",
+            },
+        )
 
         print(f"[DEBUG FCM API] Push notification successful: {pushed}")
         if not pushed:
