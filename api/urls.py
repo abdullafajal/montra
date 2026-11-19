@@ -22,6 +22,11 @@ urlpatterns = [
     path("auth/reset-password/", views.ResetPasswordAPIView.as_view(), name="reset_password"),
 
     path("devices/register/", views.DeviceTokenAPIView.as_view(), name="device_register"),
+
+    # Notifications (in-app inbox)
+    path("notifications/", views.NotificationListAPIView.as_view(), name="notification_list"),
+    path("notifications/read/", views.NotificationReadAPIView.as_view(), name="notification_read"),
+    path("notifications/<int:pk>/", views.NotificationDeleteAPIView.as_view(), name="notification_delete"),
     
     # Contact & Bug Reports
     path("contact/captcha/", ContactCaptchaAPIView.as_view(), name="contact_captcha"),
