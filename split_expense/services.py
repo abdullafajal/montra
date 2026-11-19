@@ -154,7 +154,7 @@ def invite_user_to_group(group, identifier, inviter, request=None):
         GroupMember.objects.create(group=group, user=user_to_add, is_accepted=False, invited_by=inviter)
         
         # Send notifications (Push)
-        _send_group_invitation_notification(group, user_to_add, request=request)
+        _send_group_invitation_notification(group, user_to_add, request=request, inviter=inviter)
         return True, f"Invitation sent to {user_to_add.username}."
     
     else:
@@ -172,32 +172,21 @@ def invite_user_to_group(group, identifier, inviter, request=None):
         _send_external_group_invitation_email(group, invite, inviter, request=request)
         return True, f"Invitation email sent to {email}."
 
-def _send_group_invitation_notification(group, invited_user, request=None):
-    """Notify app user about group invitation via Push and In-app notification."""
-    sender = group.created_by
-    subject = "New Group Invitation"
-    body = f"{sender.username} invited you to join the group '{group.name}'."
-    
-    from accounts.models import DeviceToken, Notification
-    from config.firebase import send_push_notification
-    
-    # In-app record
-    Notification.objects.create(
-        user=invited_user,
-        title=subject,
-        message=body,
-        data={"action": "open_split_invitations", "group_id": str(group.id)}
+def _send_group_invitation_notification(group, invited_user, request=None, inviter=None):
+    """Notify an app user about a group invitation (Notifications list + push), naming
+    the person who actually invited them."""
+    sender = inviter or group.created_by
+    name = f"{sender.first_name} {sender.last_name}".strip() or sender.username
+    subject = f"{name} invited you to {group.name}"
+    body = "Join to split expenses together. Tap to accept or decline."
+
+    from accounts.notify import notify
+    notify(
+        invited_user,
+        subject,
+        body,
+        data={"action": "open_split_invitations", "group_id": str(group.id), "kind": "split_invitation"},
     )
-    
-    # Push
-    tokens = DeviceToken.objects.filter(user=invited_user)
-    for dt in tokens:
-        send_push_notification(
-            token=dt.token, 
-            title=subject, 
-            body=body, 
-            data={"action": "open_split_invitations", "group_id": str(group.id)}
-        )
 
 def _send_external_group_invitation_email(group, invite, inviter, request=None):
     """Send email to non-app user."""
