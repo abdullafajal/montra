@@ -494,28 +494,64 @@ class AvatarUploadAPIView(View):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class DashboardAPIView(View):
-    """GET /api/dashboard/ — aggregated dashboard data."""
+    """GET /api/dashboard/ — aggregated dashboard data.
+
+    ``?month=YYYY-MM`` shows that month (default: this month; future months fall back to
+    this month). ``avg_daily`` is the month's spending divided by the days counted: days
+    so far for this month, every day for a past month.
+    """
 
     @method_decorator(api_login_required)
     def get(self, request):
+        import calendar
+
         user = request.api_user
         today = timezone.localdate()
-        month_start = today.replace(day=1)
+        this_month = today.replace(day=1)
+        sel = this_month
+        month_param = request.GET.get("month", "").strip()
+        if month_param:
+            try:
+                y, m = (int(x) for x in month_param.split("-")[:2])
+                sel = date(y, m, 1)
+            except (ValueError, TypeError):
+                return JsonResponse({"error": "month must look like 2026-11."}, status=400)
+        if sel > this_month:
+            sel = this_month
+        is_current = sel == this_month
+        days_in_month = calendar.monthrange(sel.year, sel.month)[1]
+        days_counted = today.day if is_current else days_in_month
 
-        # Monthly stats — ensure we include everything in the current month
-        month_txns = Transaction.objects.filter(
-            user=user, date__year=today.year, date__month=today.month
-        )
+        month_txns = Transaction.objects.filter(user=user, date__year=sel.year, date__month=sel.month)
         income = month_txns.filter(type="income").aggregate(t=Sum("amount"))["t"] or Decimal("0")
         expenses = month_txns.filter(type="expense").aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        avg_daily = (expenses / days_counted) if days_counted else Decimal("0")
+
+        # Spending per day of the month, and per week (1–7, 8–14, …).
+        daily_values = [0.0] * days_in_month
+        per_day = (
+            month_txns.filter(type="expense")
+            .values("date__date")
+            .annotate(t=Sum("amount"))
+        )
+        for row in per_day:
+            d = row["date__date"]
+            if d and d.month == sel.month:
+                daily_values[d.day - 1] += float(row["t"] or 0)
+        week_labels, week_values = [], []
+        for start in range(1, days_in_month + 1, 7):
+            end = min(start + 6, days_in_month)
+            week_labels.append(f"{start}–{end}")
+            week_values.append(round(sum(daily_values[start - 1:end]), 2))
 
         # All-time balance
         all_income = Transaction.objects.filter(user=user, type="income").aggregate(t=Sum("amount"))["t"] or Decimal("0")
         all_expenses = Transaction.objects.filter(user=user, type="expense").aggregate(t=Sum("amount"))["t"] or Decimal("0")
         total_balance = all_income - all_expenses
 
-        # Recent transactions
-        recent = Transaction.objects.filter(user=user).select_related("category")[:5]
+        # Recent transactions: the latest overall for this month, that month's otherwise.
+        recent_qs = Transaction.objects.filter(user=user) if is_current else month_txns
+        recent = recent_qs.select_related("category").order_by("-date", "-id")[:5]
         profile, _ = UserProfile.objects.get_or_create(user=user)
         currency_symbol = profile.get_currency_symbol()
 
@@ -530,41 +566,42 @@ class DashboardAPIView(View):
         pie_values = [float(d["total"]) for d in cat_data]
         pie_colors = [d["category__color"] or "#6366f1" for d in cat_data]
 
-        # Chart data: monthly income vs expense (last 6 months)
+        # Chart data: income vs expense for the 6 months up to the selected one
         bar_labels, bar_income, bar_expense = [], [], []
         for i in range(5, -1, -1):
-            m = (today.month - i - 1) % 12 + 1
-            y = today.year - ((today.month - i - 1) < 0)
-            if today.month - i <= 0:
-                y = today.year - 1
-                m = 12 + (today.month - i)
-            month_label = date(y, m, 1).strftime("%b")
-            bar_labels.append(month_label)
+            idx = sel.year * 12 + (sel.month - 1) - i
+            y, m = divmod(idx, 12)
+            m += 1
+            bar_labels.append(date(y, m, 1).strftime("%b"))
             mtxns = Transaction.objects.filter(user=user, date__year=y, date__month=m)
             bar_income.append(float(mtxns.filter(type="income").aggregate(t=Sum("amount"))["t"] or 0))
             bar_expense.append(float(mtxns.filter(type="expense").aggregate(t=Sum("amount"))["t"] or 0))
 
-        # Chart data: 30-day spending trend
+        # Chart data: 30-day spending trend (one query)
+        first_day = today - timedelta(days=29)
+        trend = dict(
+            Transaction.objects.filter(user=user, type="expense", date__date__gte=first_day, date__date__lte=today)
+            .values_list("date__date")
+            .annotate(t=Sum("amount"))
+        )
         line_labels, line_values = [], []
         for i in range(29, -1, -1):
             d = today - timedelta(days=i)
-            daily = Transaction.objects.filter(
-                user=user, type="expense", date__date=d
-            ).aggregate(t=Sum("amount"))["t"] or 0
             line_labels.append(d.strftime("%d"))
-            line_values.append(float(daily))
+            line_values.append(float(trend.get(d) or 0))
 
         # Auto-create / carry forward budgets for the current month if none exist
-        from transactions.services import ensure_current_month_budgets
-        ensure_current_month_budgets(user, today)
+        if is_current:
+            from transactions.services import ensure_current_month_budgets
+            ensure_current_month_budgets(user, today)
 
         # Budget warnings and overall monthly budget
-        current_budgets = Budget.objects.filter(user=user, month__year=today.year, month__month=today.month).select_related("category")
+        month_budgets = Budget.objects.filter(user=user, month__year=sel.year, month__month=sel.month).select_related("category")
         budget_warnings = []
         monthly_budget_limit = Decimal("0")
         monthly_budget_spent = Decimal("0")
-        
-        for b in current_budgets:
+
+        for b in month_budgets:
             spent = b.get_spent()
             monthly_budget_limit += b.amount
             monthly_budget_spent += spent
@@ -576,18 +613,29 @@ class DashboardAPIView(View):
                 })
 
         # Insights
-        insights = _generate_insights(user, today, income, expenses)
+        insights = _generate_insights(user, today if is_current else sel, income, expenses)
 
         from split_expense.models import Friendship
         total_friends = Friendship.objects.filter(user=user).count()
 
+        from accounts.models import Notification
+        unread = Notification.objects.filter(user=user, is_read=False).count()
+
         return JsonResponse({
+            "month": sel.strftime("%Y-%m"),
+            "is_current_month": is_current,
             "greeting": _get_greeting(),
             "user": _user_profile_data(user),
             "total_balance": str(total_balance),
             "monthly_income": str(income),
             "monthly_expenses": str(expenses),
             "monthly_savings": str(income - expenses),
+            "avg_daily": str(avg_daily.quantize(Decimal("0.01"))),
+            "days_counted": days_counted,
+            "daily_values": daily_values,
+            "week_labels": week_labels,
+            "week_values": week_values,
+            "unread_notifications": unread,
             "total_friends": total_friends,
             "monthly_budget_limit": str(monthly_budget_limit),
             "monthly_budget_spent": str(monthly_budget_spent),
@@ -604,6 +652,72 @@ class DashboardAPIView(View):
             "budget_warnings": budget_warnings,
             "insights": insights,
         })
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class NotificationListAPIView(View):
+    """GET /api/notifications/ — the user's notifications, newest first.
+
+    ``?limit=`` (default 50, max 100). Returns ``notifications`` and ``unread_count``.
+    """
+
+    @method_decorator(api_login_required)
+    def get(self, request):
+        from accounts.models import Notification
+
+        try:
+            limit = max(1, min(100, int(request.GET.get("limit", 50))))
+        except ValueError:
+            limit = 50
+        qs = Notification.objects.filter(user=request.api_user)
+        items = [
+            {
+                "id": n.id,
+                "title": n.title,
+                "message": n.message,
+                "data": n.data or {},
+                "is_read": n.is_read,
+                "created_at": n.created_at.isoformat(),
+            }
+            for n in qs[:limit]
+        ]
+        return JsonResponse({
+            "notifications": items,
+            "unread_count": qs.filter(is_read=False).count(),
+        })
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class NotificationReadAPIView(View):
+    """POST /api/notifications/read/ — marks ``{"ids": [..]}`` as read, or all of them when
+    no ids are sent."""
+
+    @method_decorator(api_login_required)
+    def post(self, request):
+        from accounts.models import Notification
+
+        data = parse_json_body(request)
+        qs = Notification.objects.filter(user=request.api_user, is_read=False)
+        ids = data.get("ids")
+        if isinstance(ids, list) and ids:
+            qs = qs.filter(id__in=[i for i in ids if isinstance(i, int)])
+        updated = qs.update(is_read=True)
+        return JsonResponse({"updated": updated, "unread_count": Notification.objects.filter(
+            user=request.api_user, is_read=False).count()})
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class NotificationDeleteAPIView(View):
+    """DELETE /api/notifications/<id>/ — removes one notification."""
+
+    @method_decorator(api_login_required)
+    def delete(self, request, pk):
+        from accounts.models import Notification
+
+        deleted, _ = Notification.objects.filter(user=request.api_user, pk=pk).delete()
+        if not deleted:
+            return JsonResponse({"error": "Not found."}, status=404)
+        return JsonResponse({"message": "Deleted."})
 
 
 @method_decorator(csrf_exempt, name="dispatch")
