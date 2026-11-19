@@ -122,13 +122,9 @@ def _send_friend_request_notification(friend_request):
     subject = "New Friend Request"
     body = f"{sender.username} wants to be your friend on Espere."
     
-    from accounts.models import DeviceToken
-    from config.firebase import send_push_notification
-    
-    # Push
-    tokens = DeviceToken.objects.filter(user=receiver)
-    for dt in tokens:
-        send_push_notification(token=dt.token, title=subject, body=body, data={"action": "open_friends"})
+    # Saved to the receiver's Notifications list and pushed to their phone.
+    from accounts.notify import notify
+    notify(receiver, subject, body, data={"action": "open_friends", "kind": "friend_request"})
 
 def invite_user_to_group(group, identifier, inviter, request=None):
     """

@@ -86,14 +86,12 @@ class ContactSubmitAPIView(View):
             superadmins = User.objects.filter(is_superuser=True)
             notified_via_push = False
             
+            from accounts.notify import notify
             for admin in superadmins:
-                devices = DeviceToken.objects.filter(user=admin)
-                if devices.exists():
-                    for device in devices:
-                        title = f"New {contact_msg.get_type_display()}"
-                        body = f"From: {name}\n{message[:100]}..."
-                        if send_push_notification(device.token, title, body):
-                            notified_via_push = True
+                title = f"New {contact_msg.get_type_display()}"
+                body = f"From: {name}\n{message[:100]}..."
+                if notify(admin, title, body, data={"kind": "contact_message"}):
+                    notified_via_push = True
 
             if not notified_via_push and superadmins.exists():
                 admin_emails = [admin.email for admin in superadmins if admin.email]
