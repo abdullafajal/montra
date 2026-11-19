@@ -63,6 +63,7 @@ urlpatterns = [
     path("split/groups/<int:group_pk>/expenses/<int:pk>/", views.SplitExpenseDetailAPIView.as_view(), name="split_expense_detail"),
     path("split/groups/<int:pk>/settle/", views.SplitSettleAPIView.as_view(), name="split_settle"),
     path("split/groups/<int:pk>/members/", views.SplitAddMemberAPIView.as_view(), name="split_add_member"),
+    path("split/groups/<int:pk>/invites/<str:action>/", views.SplitInviteManageAPIView.as_view(), name="split_invite_manage"),
     path("split/groups/<int:group_id>/members/<int:user_id>/remove/", views.SplitRemoveMemberAPIView.as_view(), name="split_remove_member"),
     path("split/groups/<int:pk>/leave/", views.SplitLeaveGroupAPIView.as_view(), name="split_leave_group"),
     path("split/groups/<int:pk>/remind/", views.SplitReminderAPIView.as_view(), name="split_remind"),

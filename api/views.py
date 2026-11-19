@@ -1446,7 +1446,19 @@ class SplitGroupDetailAPIView(View):
         for gm in GroupMember.objects.filter(group=group).select_related("user", "user__userprofile"):
             u_data = get_user_data(request, gm.user)
             u_data["net_balance"] = str(gm.net_balance)
+            u_data["is_accepted"] = gm.is_accepted
+            u_data["is_creator"] = gm.user_id == group.created_by_id
             members_data.append(u_data)
+
+        # people invited by email who have not joined the app yet
+        pending_invites = [
+            {
+                "email": inv.email,
+                "invited_by": get_user_data(request, inv.invited_by)["display_name"],
+                "created_at": inv.created_at.isoformat(),
+            }
+            for inv in group.email_invitations.select_related("invited_by").order_by("-created_at")
+        ]
             
         # expenses
         expenses_data = []
@@ -1505,6 +1517,7 @@ class SplitGroupDetailAPIView(View):
                 "members_can_invite": group.members_can_invite,
                 "my_net_balance": str(membership.net_balance),
                 "members": members_data,
+                "pending_invites": pending_invites,
                 "recent_expenses": expenses_data,
                 "simplified_debts": debts_data,
                 "settlements": settlements_data,
@@ -1914,6 +1927,8 @@ class SplitAddMemberAPIView(View):
             return JsonResponse({"error": "Group not found."}, status=404)
 
         group = membership.group
+        if not group.members_can_invite and user.id != group.created_by_id:
+            return JsonResponse({"error": "Only the group admin can invite people to this group."}, status=403)
         user_ids = data.get("user_ids", [])
         identifier = data.get("identifier", "").strip()
 
@@ -1935,6 +1950,60 @@ class SplitAddMemberAPIView(View):
             if success: count += 1
 
         return JsonResponse({"status": "ok", "count": count})
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SplitInviteManageAPIView(View):
+    """POST /api/split/groups/<pk>/invites/<action>/ — action "resend" or "cancel".
+
+    Body: {"email": "..."} for someone invited by email, or {"user_id": n} for an app
+    user who has not accepted yet. Anyone who may invite to the group may do this.
+    """
+
+    @method_decorator(api_login_required)
+    def post(self, request, pk, action):
+        from split_expense.models import GroupInvitation
+        from split_expense.services import (
+            _send_external_group_invitation_email,
+            _send_group_invitation_notification,
+        )
+
+        user = request.api_user
+        try:
+            membership = GroupMember.objects.select_related("group").get(group_id=pk, user=user, is_accepted=True)
+        except GroupMember.DoesNotExist:
+            return JsonResponse({"error": "Group not found."}, status=404)
+        group = membership.group
+        if not group.members_can_invite and user.id != group.created_by_id:
+            return JsonResponse({"error": "Only the group admin can manage invites."}, status=403)
+        if action not in ("resend", "cancel"):
+            return JsonResponse({"error": "Unknown action."}, status=400)
+
+        data = parse_json_body(request)
+        email = (data.get("email") or "").strip().lower()
+        user_id = data.get("user_id")
+
+        if email:
+            invite = GroupInvitation.objects.filter(group=group, email__iexact=email).first()
+            if not invite:
+                return JsonResponse({"error": "Invite not found."}, status=404)
+            if action == "cancel":
+                invite.delete()
+                return JsonResponse({"status": "ok", "message": f"Invite to {email} cancelled."})
+            _send_external_group_invitation_email(group, invite, user, request=request)
+            return JsonResponse({"status": "ok", "message": f"Invite sent again to {email}."})
+
+        if user_id is not None:
+            pending = GroupMember.objects.filter(group=group, user_id=user_id, is_accepted=False).select_related("user").first()
+            if not pending:
+                return JsonResponse({"error": "No pending invite for this person."}, status=404)
+            if action == "cancel":
+                pending.delete()
+                return JsonResponse({"status": "ok", "message": "Invite cancelled."})
+            _send_group_invitation_notification(group, pending.user, request=request, inviter=user)
+            return JsonResponse({"status": "ok", "message": "Invite sent again."})
+
+        return JsonResponse({"error": "Give an email or a user_id."}, status=400)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
