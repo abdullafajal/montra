@@ -1515,6 +1515,7 @@ class SplitGroupDetailAPIView(View):
                 "created_by_id": group.created_by_id,
                 "invite_token": str(group.invite_token),
                 "members_can_invite": group.members_can_invite,
+                "created_at": group.created_at.isoformat(),
                 "my_net_balance": str(membership.net_balance),
                 "members": members_data,
                 "pending_invites": pending_invites,
