@@ -1475,6 +1475,7 @@ class SplitGroupDetailAPIView(View):
             expenses_data.append({
                 "id": ex.id,
                 "description": ex.description,
+                "category": ex.category,
                 "amount": str(ex.amount),
                 "paid_by": get_user_data(request, ex.paid_by),
                 "created_by_id": ex.created_by.id if ex.created_by else ex.paid_by.id,
@@ -1709,6 +1710,11 @@ class SplitExpenseCreateAPIView(View):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
+        category = str(data.get("category") or "")[:30]
+        if category:
+            expense.category = category
+            expense.save(update_fields=["category"])
+
         return JsonResponse({
             "expense": {
                 "id": expense.id,
@@ -1736,8 +1742,9 @@ class SplitExpenseDetailAPIView(View):
             "expense": {
                 "id": expense.id,
                 "description": expense.description,
+                "category": expense.category,
                 "amount": str(expense.amount),
-                "date": expense.created_at.isoformat(),
+                "date": expense.date.isoformat(),
                 "paid_by": get_user_data(request, expense.paid_by),
                 "created_by_id": expense.created_by.id if expense.created_by else expense.paid_by.id,
                 "split_type": expense.split_type,
@@ -1810,7 +1817,10 @@ class SplitExpenseDetailAPIView(View):
 
         from split_expense.services import update_expense
         try:
+            old_category = expense.category
             new_exp = update_expense(expense, paid_by_user, amount, description, split_type, splits_data, date=expense_date)
+            new_exp.category = str(data.get("category", old_category) or "")[:30]
+            new_exp.save(update_fields=["category"])
             return JsonResponse({
                 "expense": {
                     "id": new_exp.id,
