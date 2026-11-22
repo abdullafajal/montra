@@ -968,12 +968,16 @@ class TransactionDetailAPIView(View):
             txn.type = data["type"]
 
         if "category_id" in data:
-            try:
-                txn.category = Category.objects.get(
-                    Q(id=data["category_id"]) & (Q(is_system=True) | Q(user=request.api_user))
-                )
-            except Category.DoesNotExist:
-                return JsonResponse({"errors": {"category": "Invalid category."}}, status=400)
+            if not data["category_id"]:
+                # No category (shown as "Other"), the same as when creating.
+                txn.category = None
+            else:
+                try:
+                    txn.category = Category.objects.get(
+                        Q(id=data["category_id"]) & (Q(is_system=True) | Q(user=request.api_user))
+                    )
+                except Category.DoesNotExist:
+                    return JsonResponse({"errors": {"category": "Invalid category."}}, status=400)
 
         if "date" in data:
             txn.date = _parse_api_datetime(data["date"])
