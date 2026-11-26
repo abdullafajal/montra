@@ -612,6 +612,11 @@ class DashboardAPIView(View):
                     "color": b.category.color
                 })
 
+        # A whole-month budget, when set, is the month's limit instead of the categories' sum.
+        overall_profile, _ = UserProfile.objects.get_or_create(user=user)
+        if overall_profile.monthly_budget > 0:
+            monthly_budget_limit = overall_profile.monthly_budget
+
         # Insights
         insights = _generate_insights(user, today if is_current else sel, income, expenses)
 
@@ -1090,6 +1095,30 @@ class CategoryDetailAPIView(View):
 # Budgets
 # ---------------------------------------------------------------------------
 
+def _budget_to_dict(b):
+    return {
+        "id": b.id,
+        "category": _category_to_dict(b.category),
+        "amount": str(b.amount),
+        "month": b.month.isoformat(),
+        "spent": str(b.get_spent()),
+        "percentage": b.get_percentage(),
+        "is_exceeded": b.is_exceeded(),
+        "repeat": b.repeat,
+        "carry_over": b.carry_over,
+        "carried": str(b.carried),
+    }
+
+
+def _overall_budget(user, month_date):
+    """The whole-month limit (0 = none) and what was spent in that month."""
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    spent = Transaction.objects.filter(
+        user=user, type="expense", date__year=month_date.year, date__month=month_date.month
+    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    return {"amount": str(profile.monthly_budget), "spent": str(spent)}
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class BudgetListAPIView(View):
     """GET /api/budgets/ — list budgets with spent info."""
@@ -1118,20 +1147,16 @@ class BudgetListAPIView(View):
             from transactions.services import ensure_current_month_budgets
             ensure_current_month_budgets(user)
 
-        data = []
-        for b in budgets:
-            data.append({
-                "id": b.id,
-                "category": _category_to_dict(b.category),
-                "amount": str(b.amount),
-                "month": b.month.isoformat(),
-                "spent": str(b.get_spent()),
-                "percentage": b.get_percentage(),
-                "is_exceeded": b.is_exceeded(),
-            })
+        data = [_budget_to_dict(b) for b in budgets]
         profile, _ = UserProfile.objects.get_or_create(user=user)
+        try:
+            y, m = map(int, month_param.split("-")) if month_param else (None, None)
+            shown = date(y, m, 1) if y else timezone.localdate().replace(day=1)
+        except ValueError:
+            shown = timezone.localdate().replace(day=1)
         return JsonResponse({
             "budgets": data,
+            "overall": _overall_budget(user, shown),
             "currency_symbol": profile.get_currency_symbol()
         })
 
@@ -1160,21 +1185,40 @@ class BudgetListAPIView(View):
             except (ValueError, TypeError):
                 pass
 
+        # Setting the amount by hand replaces any carried-over part.
+        defaults = {"amount": amount, "carried": Decimal("0")}
+        if "repeat" in data:
+            defaults["repeat"] = bool(data["repeat"])
+        if "carry_over" in data:
+            defaults["carry_over"] = bool(data["carry_over"])
         budget, created = Budget.objects.update_or_create(
             user=user, category=category, month=month_date,
-            defaults={"amount": amount},
+            defaults=defaults,
         )
-        return JsonResponse({
-            "budget": {
-                "id": budget.id,
-                "category": _category_to_dict(budget.category),
-                "amount": str(budget.amount),
-                "month": budget.month.isoformat(),
-                "spent": str(budget.get_spent()),
-                "percentage": budget.get_percentage(),
-                "is_exceeded": budget.is_exceeded(),
-            }
-        }, status=201 if created else 200)
+        return JsonResponse({"budget": _budget_to_dict(budget)}, status=201 if created else 200)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class OverallBudgetAPIView(View):
+    """GET/PUT /api/budgets/overall/ — one spending limit for the whole month (0 = none)."""
+
+    @method_decorator(api_login_required)
+    def get(self, request):
+        return JsonResponse({"overall": _overall_budget(request.api_user, timezone.localdate().replace(day=1))})
+
+    @method_decorator(api_login_required)
+    def put(self, request):
+        data = parse_json_body(request)
+        try:
+            amount = Decimal(str(data.get("amount", "0")))
+            if amount < 0:
+                raise ValueError
+        except (InvalidOperation, ValueError):
+            return JsonResponse({"error": "Invalid amount."}, status=400)
+        profile, _ = UserProfile.objects.get_or_create(user=request.api_user)
+        profile.monthly_budget = amount
+        profile.save(update_fields=["monthly_budget"])
+        return JsonResponse({"overall": _overall_budget(request.api_user, timezone.localdate().replace(day=1))})
 
 
 @method_decorator(csrf_exempt, name="dispatch")

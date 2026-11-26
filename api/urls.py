@@ -49,6 +49,7 @@ urlpatterns = [
 
     # Budgets
     path("budgets/", views.BudgetListAPIView.as_view(), name="budget_list"),
+    path("budgets/overall/", views.OverallBudgetAPIView.as_view(), name="budget_overall"),
     path("budgets/<int:pk>/", views.BudgetDetailAPIView.as_view(), name="budget_detail"),
 
     # Savings
