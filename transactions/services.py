@@ -37,15 +37,21 @@ def ensure_current_month_budgets(user, date_context=None):
                 month__month=last_month.month
             )
             
-            # Duplicate the past budgets for the current month
+            # Copy the budgets that repeat. With carry-over, last month's unspent money
+            # (never negative) is added on top of the budget's own amount.
             new_budgets = []
-            for pb in past_budgets:
+            for pb in past_budgets.filter(repeat=True):
+                base = pb.amount - pb.carried
+                carried = max(pb.amount - pb.get_spent(), 0) if pb.carry_over else 0
                 new_budgets.append(
                     Budget(
                         user=user,
                         category=pb.category,
-                        amount=pb.amount,
-                        month=current_month_start
+                        amount=base + carried,
+                        month=current_month_start,
+                        repeat=True,
+                        carry_over=pb.carry_over,
+                        carried=carried,
                     )
                 )
             

@@ -38,6 +38,8 @@ class UserProfile(models.Model):
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default="INR")
     theme = models.CharField(max_length=5, choices=THEME_CHOICES, default="light")
     email_reminders = models.BooleanField(default=True, help_text="Receive daily reminders to log expenses.")
+    # One spending limit for the whole month (0 = none; then the category budgets add up).
+    monthly_budget = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def get_currency_symbol(self):
