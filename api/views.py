@@ -659,11 +659,30 @@ class DashboardAPIView(View):
         })
 
 
+def _notification_json(n):
+    return {
+        "id": n.id,
+        "title": n.title,
+        "message": n.message,
+        "data": n.data or {},
+        "is_read": n.is_read,
+        "client_ref": n.client_ref,
+        "created_at": n.created_at.isoformat(),
+    }
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class NotificationListAPIView(View):
     """GET /api/notifications/ — the user's notifications, newest first.
 
     ``?limit=`` (default 50, max 100). Returns ``notifications`` and ``unread_count``.
+    Notifications older than 90 days are removed first.
+
+    POST /api/notifications/ — saves notifications the app made itself (daily reminders,
+    budget alerts): ``{"notifications": [{"client_ref", "title", "message", "data",
+    "is_read", "created_at"}, ...]}``. Saving one with a ``client_ref`` already saved
+    returns the saved one, so the app can safely send the same list again. Returns the
+    saved ``notifications``.
     """
 
     @method_decorator(api_login_required)
@@ -674,22 +693,55 @@ class NotificationListAPIView(View):
             limit = max(1, min(100, int(request.GET.get("limit", 50))))
         except ValueError:
             limit = 50
+        Notification.prune(request.api_user)
         qs = Notification.objects.filter(user=request.api_user)
-        items = [
-            {
-                "id": n.id,
-                "title": n.title,
-                "message": n.message,
-                "data": n.data or {},
-                "is_read": n.is_read,
-                "created_at": n.created_at.isoformat(),
-            }
-            for n in qs[:limit]
-        ]
         return JsonResponse({
-            "notifications": items,
+            "notifications": [_notification_json(n) for n in qs[:limit]],
             "unread_count": qs.filter(is_read=False).count(),
         })
+
+    @method_decorator(api_login_required)
+    def post(self, request):
+        from accounts.models import Notification
+        from django.utils.dateparse import parse_datetime
+
+        data = parse_json_body(request)
+        incoming = data.get("notifications")
+        if not isinstance(incoming, list):
+            return JsonResponse({"error": "Send a list in notifications."}, status=400)
+        oldest = timezone.now() - timedelta(days=Notification.KEEP_DAYS)
+        saved = []
+        for item in incoming[:100]:
+            if not isinstance(item, dict):
+                continue
+            ref = str(item.get("client_ref") or "").strip()[:64]
+            title = str(item.get("title") or "").strip()[:255]
+            if not ref or not title:
+                continue
+            created = parse_datetime(str(item.get("created_at") or "")) or timezone.now()
+            if timezone.is_naive(created):
+                created = timezone.make_aware(created)
+            created = min(created, timezone.now())
+            if created < oldest:
+                continue  # would be removed straight away
+            extra = item.get("data") if isinstance(item.get("data"), dict) else {}
+            n, made = Notification.objects.get_or_create(
+                user=request.api_user,
+                client_ref=ref,
+                defaults={
+                    "title": title,
+                    "message": str(item.get("message") or "")[:2000],
+                    "data": extra,
+                    "is_read": bool(item.get("is_read")),
+                    "created_at": created,
+                },
+            )
+            # Read on the phone before it was saved: keep it read.
+            if not made and item.get("is_read") and not n.is_read:
+                n.is_read = True
+                n.save(update_fields=["is_read"])
+            saved.append(_notification_json(n))
+        return JsonResponse({"notifications": saved})
 
 
 @method_decorator(csrf_exempt, name="dispatch")

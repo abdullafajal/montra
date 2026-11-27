@@ -3,6 +3,7 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from datetime import timedelta
 
 
 class UserProfile(models.Model):
@@ -142,15 +143,32 @@ class DeviceToken(models.Model):
 
 
 class Notification(models.Model):
+    # Notifications older than this are removed (see prune()).
+    KEEP_DAYS = 90
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
     title = models.CharField(max_length=255)
     message = models.TextField()
     data = models.JSONField(default=dict, blank=True)
     is_read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    # Set by the app for notifications it made itself (daily reminders, budget alerts),
+    # so saving the same one twice keeps one copy.
+    client_ref = models.CharField(max_length=64, blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=["user", "client_ref"], name="unique_notification_client_ref"),
+        ]
+
+    @classmethod
+    def prune(cls, user=None):
+        """Deletes notifications older than KEEP_DAYS (for one user, or everyone)."""
+        qs = cls.objects.filter(created_at__lt=timezone.now() - timedelta(days=cls.KEEP_DAYS))
+        if user is not None:
+            qs = qs.filter(user=user)
+        return qs.delete()[0]
 
     def __str__(self):
         return f"Notification for {self.user.username}: {self.title}"
